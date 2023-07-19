@@ -3,6 +3,9 @@
 double sigmoid(double z) { return 1.0 / (1.0 + exp(-z)); }
 double sigmoid_prime(double z) { return sigmoid(z) * (1 - sigmoid(z)); }
 
+double relu(double z) { return z > 0 ? z : 0; }
+double relu_prime(double z) { return z > 0 ? 1 : 0; }
+
 Network::Network(int *sizes, int num_layers)
 {
     this->num_layers = num_layers;
