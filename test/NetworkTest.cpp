@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "NetworkTest.h"
 
-// #define LOAD_NETWORK
+#define LOAD_NETWORK
 
 #ifdef LOAD_NETWORK
     #undef LOAD_NETWORK

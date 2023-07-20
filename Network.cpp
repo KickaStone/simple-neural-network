@@ -254,6 +254,7 @@ nabla Network::backprop(const double *input, unsigned int label)
     activation[0] = (double *)malloc(sizeof(double) * sizes[0]); 
     memcpy(activation[0], input, sizeof(double) * sizes[0]);
 
+
     for (int i = 0; i < num_layers - 1; i++)
     {
         activation[i + 1] = (double *)malloc(sizeof(double) * sizes[i + 1]);
@@ -271,6 +272,11 @@ nabla Network::backprop(const double *input, unsigned int label)
         }
     }
 
+    // calculate loss
+    for (int i = 0; i < sizes[num_layers - 1]; i++)
+    {
+        loss += 0.5 * pow(activation[num_layers - 1][i] - output[i], 2);
+    }
     // backward pass
     // loss = 1/2 * (a[L] - y)^2
     // delta = (a[L] - y) * sigmoid_prime(z[L])
@@ -387,7 +393,8 @@ void Network::SGD(double **data, unsigned int *label, int epochs, int mini_batch
         for(int j = 0; j < num_training_data; j += mini_batch_size){
             update_mini_batch(data, label, j, mini_batch_size, eta);
         }
-
+        printf("loss: %lf\n", loss);
+        loss = 0.0;
         printf("Epoch %d: %d / %d\n", i, evaluate(test_data, test_label, num_test_data), num_test_data);
     }
 }

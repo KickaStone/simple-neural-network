@@ -32,6 +32,8 @@ class Network{
 public:
     int num_layers;
     int* sizes;
+
+    double loss = 0.0;
     
     Network();
     
