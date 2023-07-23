@@ -134,14 +134,13 @@ _STATIC int mnist_load(
 	*data = (mnist_data *)malloc(sizeof(mnist_data) * image_cnt);
 
 	for (i = 0; i < image_cnt; ++i) {
-		int j;
 		unsigned char read_data[28 * 28];
 		mnist_data *d = &(*data)[i];
 
 		fread(read_data, 1, 28*28, ifp);
 
 #ifdef MNIST_DOUBLE
-		for (j = 0; j < 28*28; ++j) {
+		for (int j = 0; j < 28*28; ++j) {
 			d->data[j/28][j%28] = read_data[j] / 255.0;
 		}
 #else
