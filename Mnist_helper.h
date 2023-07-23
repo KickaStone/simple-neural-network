@@ -7,6 +7,7 @@
 
 #include "mnist.h"
 
+void load(float **data, int *label, float **test_data, int *test_label);
 int convert(double **data, unsigned int *label, mnist_data *md, int num_data);
 
 #endif // __MNIST_HELPER_H__

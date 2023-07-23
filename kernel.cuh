@@ -33,3 +33,5 @@ __global__ void vecSub2(float *a, float *b, int n);
 
 
 __global__ void sigmoid_prime_vec(float *a, int n);
+
+__global__ void cost_derivative(float *a, int label, float *c, int n);

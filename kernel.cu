@@ -64,13 +64,12 @@ __device__ float sigmoidDerivative(float x)
 
 __global__ void forward(float *a, float *w, float *z, float *b, float* out, int inputSize, int outputSize)
 {
-    
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < outputSize)
     {
         z[tid] = b[tid];
         for (int i = 0; i < inputSize; i++)
-            z[tid] += a[tid] * w[i * outputSize + tid];
+            z[tid] += a[i] * w[tid * inputSize + i];
         out[tid] = sigmoid(z[tid]);
     }
 }
@@ -80,17 +79,15 @@ __global__ void forward(float *a, float *w, float *z, float *b, float* out, int 
  * @param output output vector size
  * @param w weight matrix
 */
-__global__ void backprpoError(float *delta, float *w, float *deltaNext, float *z, int input, int ouput){
-    
+__global__ void backprpoError(float *delta, float *w, float *deltaNext, float *a, int input, int output){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid < input)
-    {
+    if(tid < input){
         float sum = 0.0f;
-        for (int i = 0; i < ouput; i++)
-            sum += deltaNext[i] * w[tid * ouput + i];
-        delta[tid] = sum * sigmoidDerivative(z[tid]);
+        for(int i = 0; i < output; i++){
+            sum += w[i * input + tid] * deltaNext[i];
+        }
+        delta[tid] = sum * sigmoidDerivative(a[tid]);
     }
-    
 }
 
 /**
@@ -98,16 +95,12 @@ __global__ void backprpoError(float *delta, float *w, float *deltaNext, float *z
 */
 __global__ void get_nabla_w(float *delta, float *z, float *nabla_w, int inputSize, int outputSize)
 {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if(tid < inputSize * outputSize)
-    {
-        int i = tid / outputSize;
-        int j = tid % outputSize;
-        nabla_w[tid] = delta[j] * z[i];
-        // printf("%d %d %d %f %f %f\n", tid, i, j, delta[j], z[i], nabla_w[tid]);
+    int j = blockIdx.x;
+    int k = threadIdx.x;
+    if(j < outputSize && k < inputSize){
+        nabla_w[j * inputSize + k] = delta[j] * z[k];
     }
 }
-
 
 __global__ void get_nabla_b(float *delta, float *nabla_b, int outputSize)
 {
@@ -115,7 +108,6 @@ __global__ void get_nabla_b(float *delta, float *nabla_b, int outputSize)
     if(tid < outputSize){
         nabla_b[tid] = delta[tid];
     }
-        
 }
 
 __global__ void vecScale(float *a, float scale, int n)
@@ -128,12 +120,20 @@ __global__ void vecScale(float *a, float scale, int n)
 __global__ void print(float *a, int size){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < size)
-        printf("%f ", a[tid]);
+        printf("%.8lf ", a[tid]);
+    printf("\n");
 }
 
-__global__ void sigmoid_prime_vec(float *a, int n){
+__global__ void sigmoid_prime_vec(float *z, int n){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < n){
-        a[tid] = sigmoidDerivative(a[tid]);
+        z[tid] = sigmoid(z[tid]) * (1 - sigmoid(z[tid]));
+    }
+}
+__global__ void cost_derivative(float *a, int label, float *delta, int n){
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid < n){
+        if(tid == label) delta[tid] = a[tid] - 1.0f;
+        else delta[tid] = a[tid];
     }
 }
