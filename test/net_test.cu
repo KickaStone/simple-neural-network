@@ -8,17 +8,17 @@
 
 std::vector<int> layers = {2, 2};
 NeuralNetwork nn = NeuralNetwork(2, layers, 0.5);
-float* input = new float[2]{0.05f, 0.1f};
-float* y = new float[2]{0.01f, 0.99f};
+double* input = new double[2]{0.05f, 0.1f};
+double* y = new double[2]{0.01f, 0.99f};
 
 TEST(NetworkTest, init){
     nn.setParams(0.5, 1);
-    std::vector<float*> w, b;
+    std::vector<double*> w, b;
     spdlog::set_level(spdlog::level::debug);
-    float w1[] = {0.15f, 0.2f, 0.25f, 0.30f};
-    float w2[] = {0.4f, 0.45f, 0.5f, 0.55f};
-    float b1[] = {0.35f, 0.35f};
-    float b2[] = {0.6f, 0.6f};
+    double w1[] = {0.15f, 0.2f, 0.25f, 0.30f};
+    double w2[] = {0.4f, 0.45f, 0.5f, 0.55f};
+    double b1[] = {0.35f, 0.35f};
+    double b2[] = {0.6f, 0.6f};
     w.push_back(w1);
     w.push_back(w2);
     b.push_back(b1);
@@ -37,11 +37,11 @@ TEST(NetworkTest, checkParamsSize){
 }
 
 TEST(NetworkTest, checkwb){
-    std::vector<float*> w1(2);
-    std::vector<float*> b1(2);
+    std::vector<double*> w1(2);
+    std::vector<double*> b1(2);
     for(int i = 0; i < 2; i++){
-        w1[i] = new float[4];
-        b1[i] = new float[2];
+        w1[i] = new double[4];
+        b1[i] = new double[2];
     }
     nn._debug_get_weights_and_biases(w1, b1);
     EXPECT_TRUE(fabs(w1[0][0] - 0.15f) < 0.00001f);
@@ -57,10 +57,10 @@ TEST(NetworkTest, checkwb){
 }
 
 TEST(NetworkTest, forward){
-    float *output = nn.forward(input, 2);
-    std::vector<float *> a(2);
+    double *output = nn.forward(input, 2);
+    std::vector<double *> a(2);
     for(int i = 0; i < 2; i++){
-        a[i] = new float[2];
+        a[i] = new double[2];
     }
     nn._debug_get_a(a);
     EXPECT_TRUE(fabs(a[0][0] - 0.59326999f) < 0.00001f);
@@ -68,9 +68,9 @@ TEST(NetworkTest, forward){
     EXPECT_TRUE(fabs(a[1][0] - 0.75136507f) < 0.00001f);
     EXPECT_TRUE(fabs(a[1][1] - 0.772928465f) < 0.00001f);
 
-    float loss = 0;
-    loss = nn.getLoss(y);
-    spdlog::debug("loss: {}", loss);
+    // double loss = 0;
+    // loss = nn.getLoss(y);
+    // spdlog::debug("loss: {}", loss);
 
     // EXPECT_TRUE(fabs(output[0] - 0.75136507f) < 0.00001f);
     // EXPECT_TRUE(fabs(output[1] - 0.772928465f) < 0.00001f);
@@ -78,14 +78,14 @@ TEST(NetworkTest, forward){
 
 TEST(NetworkTest, backprop){
     nn.backprop(y);
-    std::vector<float*> dw(2);
-    std::vector<float*> db(2);
+    std::vector<double*> dw(2);
+    std::vector<double*> db(2);
 
-    std::vector<float*> delta(2);
+    std::vector<double*> delta(2);
     for(int i = 0; i < 2; i++){
-        dw[i] = new float[4];
-        db[i] = new float[2];
-        delta[i] = new float[2];
+        dw[i] = new double[4];
+        db[i] = new double[2];
+        delta[i] = new double[2];
     }
     nn._debug_get_grad(dw, db);
     nn._debug_get_delta(delta);
@@ -113,12 +113,12 @@ TEST(NetworkTest, backprop){
 
 TEST(NetworkTest, updateTest){
     nn.update_weights_and_biases();
-    std::vector<float*> w(2);
-    std::vector<float*> b(2);
+    std::vector<double*> w(2);
+    std::vector<double*> b(2);
 
     for(int i = 0; i < 2; i++){
-        w[i] = new float[4];
-        b[i] = new float[2];
+        w[i] = new double[4];
+        b[i] = new double[2];
     }
 
     nn._debug_get_weights_and_biases(w, b);

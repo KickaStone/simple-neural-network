@@ -9,10 +9,10 @@ using namespace std;
 
 
 int n1 = 60000, n2 = 10000;
-vector<float*> training_images(n1);
-vector<float*> test_images(n2);
+vector<double*> training_images(n1);
+vector<double*> test_images(n2);
 vector<int> training_labels(n1);
-vector<float*> y(n1);
+vector<double*> y(n1);
 vector<int> test_labels(n2);
 
 TEST(Mnist_helper, read_mnist_images) {
@@ -20,7 +20,7 @@ TEST(Mnist_helper, read_mnist_images) {
     load(training_images, training_labels, test_images, test_labels);
 
     for(int i = 0; i < n1; i++){
-        y[i] = new float[10];
+        y[i] = new double[10];
         for(int j = 0; j < 10; j++)
             y[i][j] = 0.0f;
         y[i][training_labels[i]] = 1.0f;

@@ -1,6 +1,6 @@
 #include "mathkernel.cuh"
 
-__global__ void memset(float *a, int n, float val)
+__global__ void memset(double *a, int n, double val)
 {
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     if(tid < n){
@@ -8,7 +8,7 @@ __global__ void memset(float *a, int n, float val)
     }
 }
 
-__global__ void vecAdd(float *a, float *b, float *c, int n)
+__global__ void vecAdd(double *a, double *b, double *c, int n)
 {
     int i = threadIdx.x + blockDim.x * blockIdx.x;
     if(i < n){
@@ -16,10 +16,10 @@ __global__ void vecAdd(float *a, float *b, float *c, int n)
     }
 }
 
-__global__ void matMulvec(float *a, float *b, float *c, int row, int col, bool transpose)
+__global__ void matMulvec(double *a, double *b, double *c, int row, int col, bool transpose)
 {
     int i = threadIdx.x + blockDim.x * blockIdx.x;
-    float sum = 0;
+    double sum = 0;
     if(transpose){
         if(i < col){
             for(int j = 0; j < row; j++){
@@ -37,7 +37,7 @@ __global__ void matMulvec(float *a, float *b, float *c, int row, int col, bool t
     }
 }
 
-__global__ void sigmoid_ztoa(float *z, float *a, int n)
+__global__ void sigmoid_ztoa(double *z, double *a, int n)
 {
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     if(tid < n){
@@ -45,7 +45,7 @@ __global__ void sigmoid_ztoa(float *z, float *a, int n)
     }
 }
 
-__global__ void sigmoid_z_prime(float *a, float *z_prime, int n)
+__global__ void sigmoid_z_prime(double *a, double *z_prime, int n)
 {
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     if(tid < n){
@@ -53,7 +53,7 @@ __global__ void sigmoid_z_prime(float *a, float *z_prime, int n)
     }
 }
 
-__global__ void cost_prime(float *a, float *y, float *da, int n)
+__global__ void cost_prime(double *a, double *y, double *da, int n)
 {
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     if(tid < n){
@@ -61,7 +61,7 @@ __global__ void cost_prime(float *a, float *y, float *da, int n)
     }
 }
 
-__global__ void vecMul(float *a, float *b, float *c, int n)
+__global__ void vecMul(double *a, double *b, double *c, int n)
 {
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     if(tid < n){
@@ -70,7 +70,7 @@ __global__ void vecMul(float *a, float *b, float *c, int n)
 }
 
 
-__global__ void copy(float *dst, float *src, int n)
+__global__ void copy(double *dst, double *src, int n)
 {
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     if(tid < n){
@@ -78,7 +78,7 @@ __global__ void copy(float *dst, float *src, int n)
     }
 }
 
-__global__ void update(float *v, float *dC_dv, float eta, int n)
+__global__ void update(double *v, double *dC_dv, double eta, int n)
 {
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     if(tid < n){
@@ -86,7 +86,7 @@ __global__ void update(float *v, float *dC_dv, float eta, int n)
     }
 }
 
-__global__ void cal_dw(float *a, float *delta, float *dC_dw, int input_size, int output_size)
+__global__ void cal_dw(double *a, double *delta, double *dC_dw, int input_size, int output_size)
 {
     // dC_dw(j, k) = a[l-1](k) * delta[j]
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
@@ -95,14 +95,14 @@ __global__ void cal_dw(float *a, float *delta, float *dC_dw, int input_size, int
     }
 }
 
-__global__ void cal_loss(float *a, float *y, float *loss, int n)
+__global__ void cal_loss(double *a, double *y, float *loss, int n)
 {
-    extern __shared__ float sdata[];
+    extern __shared__ double sdata[];
 
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     int sidx = threadIdx.x;
 
-    float diff = (a[tid] - y[tid]);
+    double diff = (a[tid] - y[tid]);
     sdata[sidx] = 0.5 * diff * diff;
 
     __syncthreads();

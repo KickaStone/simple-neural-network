@@ -1,19 +1,20 @@
 #include "network.cuh"
-void NeuralNetwork::fillRandom(float *arr, int size)
+void NeuralNetwork::fillRandom(double *arr, int size)
 {
     curandGenerator_t gen;
     curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
     curandSetPseudoRandomGeneratorSeed(gen, clock());
-    curandGenerateNormal(gen, arr, size, 0, 1); // standard normal distribution
+    // curandGenerateNormal(gen, arr, size, 0, 1); // standard normal distribution
+    curandGenerateNormalDouble(gen, arr, size, 0, 1); // standard normal distribution
     CUDA_CHECK(cudaGetLastError());
 }
 
-void NeuralNetwork::fillZero(float *arr, int size)
+void NeuralNetwork::fillZero(double *arr, int size)
 {
-    CUDA_CHECK(cudaMemset(arr, 0, sizeof(float) * size));
+    CUDA_CHECK(cudaMemset(arr, 0, sizeof(double) * size));
 }
 
-NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers, float eta)
+NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers, double eta)
 {
     spdlog::debug("Initializing network");
     params.inputsize = input;
@@ -22,17 +23,17 @@ NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers, float eta)
     params.layers = layers;
     params.eta = eta;
 
-    CUDA_CHECK(cudaMalloc((void**)&data, sizeof(float) * input));
-    CUDA_CHECK(cudaMalloc((void**)&y, sizeof(float) * layers[layers.size() - 1]));
+    CUDA_CHECK(cudaMalloc((void**)&data, sizeof(double) * input));
+    CUDA_CHECK(cudaMalloc((void**)&y, sizeof(double) * layers[layers.size() - 1]));
 
     int blocks = 0;
-    float *dev_w, *dev_b, *dev_z, *dev_a, *dev_dz, *dev_dC_dw, *dev_db, *dev_da;
+    double *dev_w, *dev_b, *dev_z, *dev_a, *dev_dz, *dev_dC_dw, *dev_db, *dev_da;
     layers.insert(layers.begin(), input);
     for(int i = 0; i < params.num_layers; i++){
         // note i include input layer
         // create and initialize weights and biases
-        CUDA_CHECK(cudaMalloc((void**)&dev_w, sizeof(float) * layers[i+1] * layers[i]));
-        CUDA_CHECK(cudaMalloc((void**)&dev_b, sizeof(float) * layers[i+1]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_w, sizeof(double) * layers[i+1] * layers[i]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_b, sizeof(double) * layers[i+1]));
         fillRandom(dev_w, layers[i+1] * layers[i]);
         fillRandom(dev_b, layers[i+1]);
         // blocks = (layers[i+1] + params.blocksize - 1) / params.blocksize;
@@ -42,32 +43,32 @@ NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers, float eta)
         b.push_back(dev_b);
 
         // initialize z and a
-        CUDA_CHECK(cudaMalloc((void**)&dev_z, sizeof(float) * layers[i+1]));
-        CUDA_CHECK(cudaMalloc((void**)&dev_a, sizeof(float) * layers[i+1]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_z, sizeof(double) * layers[i+1]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_a, sizeof(double) * layers[i+1]));
         z.push_back(dev_z);
         a.push_back(dev_a);
 
         // initialize grad vectors
-        CUDA_CHECK(cudaMalloc((void**)&dev_dC_dw, sizeof(float) * layers[i+1] * layers[i]));
-        CUDA_CHECK(cudaMalloc((void**)&dev_db, sizeof(float) * layers[i+1]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_dC_dw, sizeof(double) * layers[i+1] * layers[i]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_db, sizeof(double) * layers[i+1]));
         // fillRandom(dev_dC_dw, layers[i+1] * layers[i]);
         // memset<<<blocks, params.blocksize>>>(dev_db, 0.1f, layers[i+1]);
         dC_dw.push_back(dev_dC_dw);
         dC_db.push_back(dev_db);
 
         // initialize dz da
-        CUDA_CHECK(cudaMalloc((void**)&dev_dz, sizeof(float) * layers[i+1]));
-        CUDA_CHECK(cudaMalloc((void**)&dev_da, sizeof(float) * layers[i+1]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_dz, sizeof(double) * layers[i+1]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_da, sizeof(double) * layers[i+1]));
         dC_dz.push_back(dev_dz);
         dC_da.push_back(dev_da);
 
         // initialize z_prime
-        CUDA_CHECK(cudaMalloc((void**)&dev_dz, sizeof(float) * layers[i+1]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_dz, sizeof(double) * layers[i+1]));
         z_prime.push_back(dev_dz);
 
         // initialize batch_dw batch_db
-        CUDA_CHECK(cudaMalloc((void**)&dev_dC_dw, sizeof(float) * layers[i+1] * layers[i]));
-        CUDA_CHECK(cudaMalloc((void**)&dev_db, sizeof(float) * layers[i+1]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_dC_dw, sizeof(double) * layers[i+1] * layers[i]));
+        CUDA_CHECK(cudaMalloc((void**)&dev_db, sizeof(double) * layers[i+1]));
         batch_dw.push_back(dev_dC_dw);
         batch_db.push_back(dev_db);
     }
@@ -90,23 +91,23 @@ NeuralNetwork::~NeuralNetwork()
 }
 
 
-float* NeuralNetwork::forward(float *input, int size)
+double* NeuralNetwork::forward(double *input, int size)
 {
     spdlog::debug("Forward propagation");
-    float *output = new float[params.outputsize]();
+    double *output = new double[params.outputsize]();
     if(size != params.inputsize){
         std::cout << "Input size does not match network input size" << std::endl;
         return NULL;
     }
 
     // copy input data to first layer
-    CUDA_CHECK(cudaMemcpy(data, input, sizeof(float) * size, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(data, input, sizeof(double) * size, cudaMemcpyHostToDevice));
     
     for(int l = 0; l < params.num_layers; l++){
         spdlog::debug("Layer {}", l);
         blocks = std::ceil((params.layers[l] + params.blocksize - 1)/ params.blocksize);
-        CUDA_CHECK(cudaMemset(z[l], 0, params.layers[l] * sizeof(float)));
-        CUDA_CHECK(cudaMemset(a[l], 0, params.layers[l] * sizeof(float)));
+        CUDA_CHECK(cudaMemset(z[l], 0, params.layers[l] * sizeof(double)));
+        CUDA_CHECK(cudaMemset(a[l], 0, params.layers[l] * sizeof(double)));
 
         if(l == 0) matMulvec<<<blocks, params.blocksize>>>(w[l], data, z[l], params.layers[l], params.inputsize);
         else matMulvec<<<blocks, params.blocksize>>>(w[l], a[l-1], z[l], params.layers[l], params.layers[l-1]);
@@ -121,23 +122,23 @@ float* NeuralNetwork::forward(float *input, int size)
     }
 
     // copy output to host
-    CUDA_CHECK(cudaMemcpy(output, a[params.num_layers - 1], sizeof(float) * params.outputsize, cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(output, a[params.num_layers - 1], sizeof(double) * params.outputsize, cudaMemcpyDeviceToHost));
     spdlog::debug("Forward propagation done");
     return output;
 }
 
-void NeuralNetwork::setParams(float learning_rate, int batch_size)
+void NeuralNetwork::setParams(double learning_rate, int batch_size)
 {
     params.eta = learning_rate;
     params.batchsize = batch_size;
 }
 
-void NeuralNetwork::backprop(float *h_y)
+void NeuralNetwork::backprop(double *h_y)
 {
     spdlog::debug("Backpropagation");
     int n = -1; // n  number of neurons in layer l
     // copy y to device
-    CUDA_CHECK(cudaMemcpy(this->y, h_y, sizeof(float) * params.outputsize, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(this->y, h_y, sizeof(double) * params.outputsize, cudaMemcpyHostToDevice));
     for(int l = params.num_layers-1; l >= 0; l--){
         spdlog::debug("Layer {}", l);
 
@@ -203,24 +204,12 @@ void NeuralNetwork::update_weights_and_biases()
     spdlog::debug("Weights and biases updated");
 }
 
-float NeuralNetwork::getLoss(float *yy)
-{
-    float *d_loss = 0;
-    CUDA_CHECK(cudaMalloc((void**)&d_loss, sizeof(float)));
-    CUDA_CHECK(cudaMemcpy(this->y, y, sizeof(float) * params.outputsize, cudaMemcpyHostToDevice));
-    blocks = std::ceil((params.outputsize + params.blocksize - 1)/ params.blocksize);
-    cal_loss<<<blocks, params.blocksize>>>(a[params.num_layers-1], this->y, d_loss, params.outputsize);
-    CUDA_CHECK(cudaGetLastError());
-    float h_loss;
-    CUDA_CHECK(cudaMemcpy(&h_loss, d_loss, sizeof(float), cudaMemcpyDeviceToHost));
-    CUDA_CHECK(cudaFree(d_loss));
-    return h_loss;
-}
-
-void NeuralNetwork::SDG_train(std::vector<float *> &training_data, std::vector<float *> training_label, int epochs, int batch_size, std::vector<float *> &test_data, std::vector<int> &test_label)
+void NeuralNetwork::SDG_train(std::vector<double *> &training_data, std::vector<double *> training_label, int epochs, int batch_size, std::vector<double *> &test_data, std::vector<int> &test_label)
 {
     params.batchsize = batch_size;
     for(int ep = 0; ep < epochs; ep++){
+
+        CUDA_CHECK(cudaDeviceSynchronize());
         spdlog::debug("Epoch {}", ep);
         void *d_data, *d_label;
         loss = 0.0f;
@@ -233,13 +222,12 @@ void NeuralNetwork::SDG_train(std::vector<float *> &training_data, std::vector<f
             std::swap(training_label[i], training_label[j]);
         }
 
-
         // iterate through batches
         for(int batch = 0; batch < training_data.size() / batch_size; batch++){
             spdlog::debug("Batch {}", batch);
             #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||"
             #define PBWIDTH 50
-            float percentage = (float)(batch+1) / (float)(training_data.size() / batch_size);
+            double percentage = (double)(batch+1) / (double)(training_data.size() / batch_size);
             int lpad = (int)(percentage * PBWIDTH);
             int val = (int)(percentage * 100);
             int rpad = PBWIDTH - lpad;
@@ -250,9 +238,9 @@ void NeuralNetwork::SDG_train(std::vector<float *> &training_data, std::vector<f
 
         fflush(stdout);
         int correct = 0;
-        float test_loss = 0.0f;
+        double test_loss = 0.0f;
         for(int i = 0; i < test_data.size(); i++){
-            float *output = forward(test_data[i], params.inputsize);
+            double *output = forward(test_data[i], params.inputsize);
             int max_index = 0;
             for(int j = 0; j < params.outputsize; j++){
                 if(output[j] > output[max_index]) max_index = j;
@@ -267,7 +255,7 @@ void NeuralNetwork::SDG_train(std::vector<float *> &training_data, std::vector<f
     }
 }
 
-void NeuralNetwork::mini_batch(std::vector<float *> &training_data, std::vector<float*> &training_label, int batch_size, int start)
+void NeuralNetwork::mini_batch(std::vector<double *> &training_data, std::vector<double*> &training_label, int batch_size, int start)
 {
     spdlog::debug("Mini batch");
     int end = start + batch_size;
@@ -279,8 +267,8 @@ void NeuralNetwork::mini_batch(std::vector<float *> &training_data, std::vector<
     // initialize batch_dw and batch_db
     int n = params.inputsize;
     for(int l = 0; l < params.num_layers; l++){
-        CUDA_CHECK(cudaMemset(batch_dw[l], 0, sizeof(float) * n * params.layers[l]));
-        CUDA_CHECK(cudaMemset(batch_db[l], 0, sizeof(float) * params.layers[l]));
+        CUDA_CHECK(cudaMemset(batch_dw[l], 0, sizeof(double) * n * params.layers[l]));
+        CUDA_CHECK(cudaMemset(batch_db[l], 0, sizeof(double) * params.layers[l]));
         n = params.layers[l];
     }
 
@@ -295,32 +283,34 @@ void NeuralNetwork::mini_batch(std::vector<float *> &training_data, std::vector<
     // update weights and biases    
     update_weights_and_biases();
     spdlog::debug("Mini batch done");
+
+    CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 
 
 #ifdef DEBUG
-void NeuralNetwork::_debug_get_weights_and_biases(std::vector<float *> w, std::vector<float *> b)
+void NeuralNetwork::_debug_get_weights_and_biases(std::vector<double *> w, std::vector<double *> b)
 {
     // copy weights and biases to host
     spdlog::debug("Getting weights and biases");
     int n = params.inputsize;
     for(int i = 0; i < params.num_layers; i++){
-        CUDA_CHECK(cudaMemcpy(w[i], this->w[i], sizeof(float) * n * params.layers[i], cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(b[i], this->b[i], sizeof(float) * params.layers[i], cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(w[i], this->w[i], sizeof(double) * n * params.layers[i], cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(b[i], this->b[i], sizeof(double) * params.layers[i], cudaMemcpyDeviceToHost));
         n = params.layers[i];
     }
     spdlog::debug("Weights and biases got");
 }
 
-void NeuralNetwork::_debug_get_grad(std::vector<float *> dw, std::vector<float *> db)
+void NeuralNetwork::_debug_get_grad(std::vector<double *> dw, std::vector<double *> db)
 {
     // copy weights and biases to host
     spdlog::debug("Getting gradients");
     int n = params.inputsize;
     for(int i = 0; i < params.num_layers; i++){
-        CUDA_CHECK(cudaMemcpy(dw[i], this->dC_dw[i], sizeof(float) * n * params.layers[i], cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(db[i], this->dC_db[i], sizeof(float) * params.layers[i], cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(dw[i], this->dC_dw[i], sizeof(double) * n * params.layers[i], cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(db[i], this->dC_db[i], sizeof(double) * params.layers[i], cudaMemcpyDeviceToHost));
         n = params.layers[i];
     }
     spdlog::debug("Gradients got");
@@ -331,29 +321,29 @@ Params NeuralNetwork::_debug_params()
     return params;
 }
 
-void NeuralNetwork::_debug_get_a(std::vector<float *> a)
+void NeuralNetwork::_debug_get_a(std::vector<double *> a)
 {
     // copy a values to host
     spdlog::debug("Getting activations values");
     
     for(int i = 0; i < params.num_layers; i++){
-        CUDA_CHECK(cudaMemcpy(a[i], this->a[i], sizeof(float) * params.layers[i], cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(a[i], this->a[i], sizeof(double) * params.layers[i], cudaMemcpyDeviceToHost));
     }
     spdlog::debug("Activations values got");
 }
 
-void NeuralNetwork::_debug_get_delta(std::vector<float *> delta)
+void NeuralNetwork::_debug_get_delta(std::vector<double *> delta)
 {
     // copy a values to host
     spdlog::debug("Getting delta values");
     
     for(int i = 0; i < params.num_layers; i++){
-        CUDA_CHECK(cudaMemcpy(delta[i], this->dC_dz[i], sizeof(float) * params.layers[i], cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(delta[i], this->dC_dz[i], sizeof(double) * params.layers[i], cudaMemcpyDeviceToHost));
     }
     spdlog::debug("Delta values got");
 }
 
-void NeuralNetwork::_debug_set(std::vector<float *> w, std::vector<float *> b)
+void NeuralNetwork::_debug_set(std::vector<double *> w, std::vector<double *> b)
 {  
     spdlog::debug("Setting weights and biases");
     if(w.size() != params.num_layers || b.size() != params.num_layers){
@@ -364,8 +354,8 @@ void NeuralNetwork::_debug_set(std::vector<float *> w, std::vector<float *> b)
     // copy weights and biases to device
     int n = params.inputsize;
     for(int i = 0; i < params.num_layers; i++){
-        CUDA_CHECK(cudaMemcpy(this->w[i], w[i], sizeof(float) * n * params.layers[i], cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(this->b[i], b[i], sizeof(float) * params.layers[i], cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(this->w[i], w[i], sizeof(double) * n * params.layers[i], cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(this->b[i], b[i], sizeof(double) * params.layers[i], cudaMemcpyHostToDevice));
         n = params.layers[i];
     }
     spdlog::debug("Weights and biases set");

@@ -2,27 +2,25 @@
 #include <cuda_runtime.h>
 #include "common.h"
 
-// __global__ void vecAdd(d_vec *a, d_vec *b, d_vec *c);
 
-__global__ void memset(float *a, int n, float val);
+__global__ void memset(double *a, int n, double val);
 
-__global__ void vecAdd(float *a, float *b, float *c, int n);
+__global__ void vecAdd(double *a, double *b, double *c, int n);
 
-__global__ void matMulvec(float *a, float *b, float *c, int row, int col, bool transpose = false);
+__global__ void matMulvec(double *a, double *b, double *c, int row, int col, bool transpose = false);
 
-__global__ void sigmoid_ztoa(float *z, float *a, int n);
+__global__ void sigmoid_ztoa(double *z, double *a, int n);
 
-__global__ void sigmoid_z_prime(float *a, float *z_prime, int n);
+__global__ void sigmoid_z_prime(double *a, double *z_prime, int n);
 
-__global__ void cost_prime(float *a, float *y, float *da, int n);
+__global__ void cost_prime(double *a, double *y, double *da, int n);
 
-__global__ void vecMul(float *a, float *b, float *c, int n);
+__global__ void vecMul(double *a, double *b, double *c, int n);
 
-__global__ void copy(float *dst, float *src, int n);
+__global__ void copy(double *dst, double *src, int n);
 
-__global__ void update(float *w, float *dC_dw, float eta, int n);
+__global__ void update(double *w, double *dC_dw, double eta, int n);
 
-__global__ void cal_dw(float *a, float *delta, float *dC_dw, int input_size, int output_size);
+__global__ void cal_dw(double *a, double *delta, double *dC_dw, int input_size, int output_size);
 
-__global__ void cal_loss(float *a, float *y, float *loss, int n);
-
+__global__ void cal_loss(double *a, double *y, double *loss, int n);

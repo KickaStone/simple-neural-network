@@ -14,12 +14,6 @@
 
 #define DEBUG
 
-#ifdef USE_FLOAT
-#define DATA_TYPE float
-#else
-#define DATA_TYPE double
-#endif
-
 struct Params
 {
     std::vector<int> layers;
@@ -30,7 +24,7 @@ struct Params
     */
     int num_layers;
     int batchsize;
-    DATA_TYPE eta;
+    double eta;
     static const int blocksize = 256;
 };
 
@@ -40,28 +34,28 @@ class NeuralNetwork
     Params params;
     int blocks;
 
-    std::vector<float*> input;
+    std::vector<double*> input;
     std::vector<int> labal;
-    float *data;
-    float *y;
-    float loss;
+    double *data;
+    double *y;
+    double loss;
 
-    std::vector<float*> w; // weights
-    std::vector<float*> b; // biases
-    std::vector<float*> z; // z = w * a + b
-    std::vector<float*> a; // a = activation(z)
+    std::vector<double*> w; // weights
+    std::vector<double*> b; // biases
+    std::vector<double*> z; // z = w * a + b
+    std::vector<double*> a; // a = activation(z)
 
-    std::vector<float*> z_prime; // activation'(z)
-    std::vector<float*> dC_dz; // delta = dc_dz = dc_da * da_dz = dc_da * activation'(z)
-    std::vector<float*> dC_da; // dc_da = dc_dz * dz_da = dc_dz * w
-    std::vector<float*> dC_dw; // dc_dw = dc_dz * dz_dw = dc_dz * a
-    std::vector<float*> dC_db; // dc_db = dc_dz * dz_db = dc_dz * 1
+    std::vector<double*> z_prime; // activation'(z)
+    std::vector<double*> dC_dz; // delta = dc_dz = dc_da * da_dz = dc_da * activation'(z)
+    std::vector<double*> dC_da; // dc_da = dc_dz * dz_da = dc_dz * w
+    std::vector<double*> dC_dw; // dc_dw = dc_dz * dz_dw = dc_dz * a
+    std::vector<double*> dC_db; // dc_db = dc_dz * dz_db = dc_dz * 1
 
-    std::vector<float*> batch_dw;
-    std::vector<float*> batch_db;
+    std::vector<double*> batch_dw;
+    std::vector<double*> batch_db;
 
-    void fillRandom(float* arr, int size);
-    void fillZero(float* arr, int size);
+    void fillRandom(double* arr, int size);
+    void fillZero(double* arr, int size);
 
 public:
 
@@ -69,38 +63,37 @@ public:
     /// @param input input data dim
     /// @param shape shape of the neural network, does not include input layer
     /// @param eta learning rate
-    NeuralNetwork(int input, std::vector<int> shape, float eta);
+    NeuralNetwork(int input, std::vector<int> shape, double eta);
     ~NeuralNetwork();
 
     
-    // void train(float* input, int labal);
+    // void train(double* input, int labal);
 
     /**
      * @brief forward propagation
      * @param input input data
      * @param size size of input data
     */
-    float* forward(float* input, int size);
+    double* forward(double* input, int size);
 
     /**
      * @brief backpropagation
      * @param y the expected output
     */
-    void setParams(float learning_rate, int batch_size);
-    void backprop(float* y);
+    void setParams(double learning_rate, int batch_size);
+    void backprop(double* y);
     void update_weights_and_biases();
-    float getLoss(float* y);
-    void SDG_train(std::vector<float*> &training_data, std::vector<float*> training_label, int epochs, int batch_size, std::vector<float*> &test_data, std::vector<int> &test_label);
-    void mini_batch(std::vector<float*> &training_data, std::vector<float*> &training_label, int batch_size, int start);
-    // int predict(float* input);
-    // void etaUpdate(float eta);
+    void SDG_train(std::vector<double*> &training_data, std::vector<double*> training_label, int epochs, int batch_size, std::vector<double*> &test_data, std::vector<int> &test_label);
+    void mini_batch(std::vector<double*> &training_data, std::vector<double*> &training_label, int batch_size, int start);
+    // int predict(double* input);
+    // void etaUpdate(double eta);
 
     #ifdef DEBUG
     Params _debug_params();
-    void _debug_get_a(std::vector<float*> a);
-    void _debug_get_delta(std::vector<float*> delta);
-    void _debug_set(std::vector<float*> w, std::vector<float*> b);
-    void _debug_get_weights_and_biases(std::vector<float*> w, std::vector<float*> b);
-    void _debug_get_grad(std::vector<float*> dC_dw, std::vector<float*> dC_db);
+    void _debug_get_a(std::vector<double*> a);
+    void _debug_get_delta(std::vector<double*> delta);
+    void _debug_set(std::vector<double*> w, std::vector<double*> b);
+    void _debug_get_weights_and_biases(std::vector<double*> w, std::vector<double*> b);
+    void _debug_get_grad(std::vector<double*> dC_dw, std::vector<double*> dC_db);
     #endif
 };
