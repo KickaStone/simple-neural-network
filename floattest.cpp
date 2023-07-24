@@ -16,7 +16,6 @@ int main(int argc, char const *argv[])
     float z1 = w1[0] * a + w1[1] * b + b1;
     float z2 = w1[2] * a + w1[3] * b + b1;
 
-
     float a1 = 1.0f / (1.0f + exp(-z1));
     float a2 = 1.0f / (1.0f + exp(-z2));
 
@@ -79,9 +78,6 @@ int main(int argc, char const *argv[])
     float n_w2_1 = w2[1] - 0.5f * dw6;
     float n_w2_2 = w2[2] - 0.5f * dw7;
     float n_w2_3 = w2[3] - 0.5f * dw8;
-
-    // float n_b1 = b1 - 0.5f * db3;
-    // float n_b2 = b2 - 0.5f * db4;
 
     printf("n_w1_0: %.9lf\n", n_w1_0);
     printf("n_w1_1: %.9lf\n", n_w1_1);

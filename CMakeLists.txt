@@ -4,8 +4,6 @@ set(this Network)
 
 project(${this} C CXX CUDA)
 
-find_package(SPDLOG REQUIRED)
-
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 14)
@@ -29,10 +27,8 @@ enable_testing()
 
 add_library(${this} STATIC ${SOURCE_SET} ${HEADER_SET})
 
-
 target_link_libraries(
-    ${this} PUBLIC
-    spdlog::spdlog
+    ${this} PRIVATE
     curand
 )
 

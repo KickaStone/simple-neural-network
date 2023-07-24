@@ -8,7 +8,7 @@ set(SOURCES
     load_test.cu 
 )
 
-find_package(spdlog CONFIG REQUIRED)
+
 
 add_executable(${this} ${SOURCES})
 
@@ -17,7 +17,6 @@ target_link_libraries(${this} PUBLIC
     gmock_main
     gmock
     gtest
-    spdlog::spdlog
     ${PROJECT_NAME}
 )
 

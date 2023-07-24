@@ -4,12 +4,13 @@
 #include <numeric>
 #include <iostream>
 #include <fstream>
+#include <string>
 
 #include <curand.h>
 #include <random>
 #include <cuda_runtime.h>
 
-#include "spdlog/spdlog.h"
+
 #include "mathkernel.cuh"
 #include "common.h"
 
