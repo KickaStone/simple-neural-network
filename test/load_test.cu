@@ -33,11 +33,8 @@ TEST(Mnist_helper, read_mnist_images) {
 TEST(Train_Test, handwriting_recognition){
     spdlog::set_level(spdlog::level::off);
     vector<int> layers = {30, 10};
-    NeuralNetwork nn = NeuralNetwork(784, layers, 3.0);
-    nn.SDG_train(training_images, y, 30, 10, test_images, test_labels);
-
-    auto ouput = nn.forward(test_images[0], 784);
-    for(int i = 0; i < 10; i++)
-        printf("%.8lf ", ouput[i]);
-    printf("\n");
+    NeuralNetwork nn = NeuralNetwork(784, layers);
+    nn.setParams(3.0, 10, 1);
+    nn.train(training_images, y, test_images, test_labels);
+    nn.save();
 }

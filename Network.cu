@@ -14,14 +14,15 @@ void NeuralNetwork::fillZero(double *arr, int size)
     CUDA_CHECK(cudaMemset(arr, 0, sizeof(double) * size));
 }
 
-NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers, double eta)
+NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers)
 {
     spdlog::debug("Initializing network");
     params.inputsize = input;
     params.outputsize = layers[layers.size() - 1];
     params.num_layers = layers.size();
     params.layers = layers;
-    params.eta = eta;
+    params.eta = 0;
+    params.batchsize = 0;
 
     CUDA_CHECK(cudaMalloc((void**)&data, sizeof(double) * input));
     CUDA_CHECK(cudaMalloc((void**)&y, sizeof(double) * layers[layers.size() - 1]));
@@ -127,10 +128,11 @@ double* NeuralNetwork::forward(double *input, int size)
     return output;
 }
 
-void NeuralNetwork::setParams(double learning_rate, int batch_size)
+void NeuralNetwork::setParams(double learning_rate, int batch_size, int epochs)
 {
     params.eta = learning_rate;
     params.batchsize = batch_size;
+    params.epochs = epochs;
 }
 
 void NeuralNetwork::backprop(double *h_y)
@@ -206,11 +208,14 @@ void NeuralNetwork::update_weights_and_biases()
     spdlog::debug("Weights and biases updated");
 }
 
-void NeuralNetwork::SDG_train(std::vector<double *> &training_data, std::vector<double *> training_label, int epochs, int batch_size, std::vector<double *> &test_data, std::vector<int> &test_label)
+void NeuralNetwork::train(std::vector<double *> &training_data, std::vector<double *> training_label, std::vector<double *> &test_data, std::vector<int> &test_label)
 {
-    params.batchsize = batch_size;
-    for(int ep = 0; ep < epochs; ep++){
-
+    if(params.epochs == 0 || params.batchsize == 0){
+        spdlog::error("Invalid epochs or batch size");
+        return;
+    }
+    
+    for(int ep = 0; ep < params.epochs; ep++){
         CUDA_CHECK(cudaDeviceSynchronize());
         spdlog::debug("Epoch {}", ep);
         void *d_data, *d_label;
@@ -225,17 +230,17 @@ void NeuralNetwork::SDG_train(std::vector<double *> &training_data, std::vector<
         }
 
         // iterate through batches
-        for(int batch = 0; batch < training_data.size() / batch_size; batch++){
+        for(int batch = 0; batch < training_data.size() / params.batchsize; batch++){
             spdlog::debug("Batch {}", batch);
             #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||"
             #define PBWIDTH 50
-            double percentage = (double)(batch+1) / (double)(training_data.size() / batch_size);
+            double percentage = (double)(batch+1) / (double)(training_data.size() / params.batchsize);
             int lpad = (int)(percentage * PBWIDTH);
             int val = (int)(percentage * 100);
             int rpad = PBWIDTH - lpad;
-            printf("\033[1m\033[34m\r%3d%% Epoch %02d, Batch %05d[%.*s%*s]\033[0m", val, ep, batch+1, lpad, PBSTR, rpad, "");
+            printf("\033[1m\033[34m\r%3d%% Epoch %02d/%02d, Batch %05d[%.*s%*s]\033[0m", val, ep, params.epochs, batch+1, lpad, PBSTR, rpad, "");
             fflush(stdout);
-            mini_batch(training_data, training_label, batch_size, batch * batch_size);
+            mini_batch(training_data, training_label, params.batchsize, batch * params.batchsize);
         }
 
         fflush(stdout);
@@ -289,7 +294,55 @@ void NeuralNetwork::mini_batch(std::vector<double *> &training_data, std::vector
     CUDA_CHECK(cudaDeviceSynchronize());
 }
 
+void NeuralNetwork::save()
+{
+    // time stamp + params + scv
+    spdlog::debug("Saving network");
+    std::ofstream file;
+    // system time stamp
+    std::time_t t = std::time(0);
+    std::tm* now = std::localtime(&t);
+    std::string w_filename = "weights_" + std::to_string(now->tm_year + 1900) + "_" + std::to_string(now->tm_mon + 1) + "_" + std::to_string(now->tm_mday) + "_" + std::to_string(now->tm_hour) + "_" + std::to_string(now->tm_min) + "_" + std::to_string(now->tm_sec) + ".csv";
+    std::string b_filename = "biases_" + std::to_string(now->tm_year + 1900) + "_" + std::to_string(now->tm_mon + 1) + "_" + std::to_string(now->tm_mday) + "_" + std::to_string(now->tm_hour) + "_" + std::to_string(now->tm_min) + "_" + std::to_string(now->tm_sec) + ".csv";
 
+    std::vector<double *> w, b;
+    int n = params.inputsize;
+    for(int i = 0; i < params.num_layers; i++){
+        w.push_back(new double[n * params.layers[i]]);
+        b.push_back(new double[params.layers[i]]);
+        n = params.layers[i];
+    }
+    _debug_get_weights_and_biases(w, b);
+    file.open(w_filename);
+    if(!file.is_open()){
+        std::cout << "Cannot open file:" << w_filename << std::endl;
+        return;
+    }
+    n = params.inputsize;
+    for(int i = 0; i < params.num_layers; i++){
+        for(int j = 0; j < params.layers[i]; j++){
+            for(int k = 0; k < n; k++){
+                file << w[i][j * n + k] << ",";
+            }
+            file << std::endl;
+        }
+        n = params.layers[i];
+    }
+    file.close();
+    file.open(b_filename);
+    if(!file.is_open()){
+        std::cout << "Cannot open file:" << b_filename << std::endl;
+        return;
+    }
+    for(int i = 0; i < params.num_layers; i++){
+        for(int j = 0; j < params.layers[i]; j++){
+            file << b[i][j] << ",";
+        }
+        file << std::endl;
+    }
+    file.close();
+    spdlog::debug("Network saved");
+}
 
 #ifdef DEBUG
 void NeuralNetwork::_debug_get_weights_and_biases(std::vector<double *> w, std::vector<double *> b)

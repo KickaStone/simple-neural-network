@@ -3,6 +3,7 @@
 #include <vector>
 #include <numeric>
 #include <iostream>
+#include <fstream>
 
 #include <curand.h>
 #include <random>
@@ -24,6 +25,7 @@ struct Params
     */
     int num_layers;
     int batchsize;
+    int epochs;
     double eta;
     static const int blocksize = 256;
 };
@@ -63,7 +65,7 @@ public:
     /// @param input input data dim
     /// @param shape shape of the neural network, does not include input layer
     /// @param eta learning rate
-    NeuralNetwork(int input, std::vector<int> shape, double eta);
+    NeuralNetwork(int input, std::vector<int> shape);
     ~NeuralNetwork();
 
     
@@ -80,13 +82,13 @@ public:
      * @brief backpropagation
      * @param y the expected output
     */
-    void setParams(double learning_rate, int batch_size);
+    void setParams(double learning_rate, int batch_size, int epochs);
     void backprop(double* y);
     void update_weights_and_biases();
-    void SDG_train(std::vector<double*> &training_data, std::vector<double*> training_label, int epochs, int batch_size, std::vector<double*> &test_data, std::vector<int> &test_label);
+    void train(std::vector<double*> &training_data, std::vector<double*> training_label, std::vector<double*> &test_data, std::vector<int> &test_label);
     void mini_batch(std::vector<double*> &training_data, std::vector<double*> &training_label, int batch_size, int start);
-    // int predict(double* input);
-    // void etaUpdate(double eta);
+
+    void save(); // save the weights and biases
 
     #ifdef DEBUG
     Params _debug_params();
