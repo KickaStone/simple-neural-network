@@ -154,7 +154,9 @@ void NeuralNetwork::backprop(double *h_y)
         if(l == params.num_layers-1){
             cost_prime<<<blocks, params.blocksize>>>(a[l], y, dC_da[l], n); // dC_da = a - y
         }else{
-            matMulvec<<<blocks, params.blocksize>>>(w[l+1], dC_dz[l+1], dC_da[l], params.layers[l], params.layers[l+1], true); // dC_da = w[l+1]^T * dC_dz[l+1]
+            // dC_da = w[l+1]^T * dC_dz[l+1]
+            // note: w[L+1]'s size is (n[l+1] * n[l])
+            matMulvec<<<blocks, params.blocksize>>>(w[l+1], dC_dz[l+1], dC_da[l], params.layers[l+1], params.layers[l], true); // dC_da = w[l+1]^T * dC_dz[l+1]
         }
         
         CUDA_CHECK(cudaGetLastError());
