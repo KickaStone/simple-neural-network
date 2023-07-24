@@ -4,29 +4,36 @@ set(this Network)
 
 project(${this} C CXX CUDA)
 
+find_package(SPDLOG REQUIRED)
+
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CUDA_STANDARD 14)
+
+add_subdirectory(googletest)
 
 set(HEADER_SET
-    Network.h
     mnist.h
     Mnist_helper.h
-    kernel.cuh
-    )
-    
+    mathkernel.cuh
+    network.cuh
+)
+
 set(SOURCE_SET
-    Network.cpp
+    mathkernel.cu
     Mnist_helper.cpp
-    train.cu
-    kernel.cu 
+    Network.cu
 )
 
-add_executable(${this} ${SOURCE_SET} ${HEADER_SET})
+enable_testing()
 
-set_property(TARGET ${this} PROPERTY CUDA_ARCHITECTURES 86)
+add_library(${this} STATIC ${SOURCE_SET} ${HEADER_SET})
 
-set_target_properties(
-    ${this} PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+
+target_link_libraries(
+    ${this} PUBLIC
+    spdlog::spdlog
+    curand
 )
+
+add_subdirectory(test)
