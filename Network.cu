@@ -6,6 +6,7 @@ const double ALPHA = 1.0;
 const double Beta = 0.0;
 const double ALPHA_NEG = -1.0;
 
+
 // ===================== kernels =======================
 __global__ void hadamard_product(double *a, double *b, double *c, int size)
 {
@@ -18,7 +19,7 @@ __global__ void sigmoid(double *z, double *a, int size)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < size)
-        a[i] = 1.0f / (1.0f + expf(-z[i]));
+        a[i] = 1.0 / (1.0 + exp(-z[i]));
 }
 
 __global__ void sigmoid_derivative(double *a, double *z, int size)
@@ -27,37 +28,6 @@ __global__ void sigmoid_derivative(double *a, double *z, int size)
     if (i < size)
         z[i] = a[i] * (1.0f - a[i]);
 }
-
-__global__ void cal_dw(double *a, double *delta, double *dC_dw, int input_size, int output_size)
-{
-    // dC_dw(j, k) = a[l-1](k) * delta[j]
-    int tid = threadIdx.x + blockDim.x * blockIdx.x;
-    if(tid < input_size * output_size){
-        dC_dw[tid] = delta[tid / input_size] * a[tid % input_size];
-    }
-}
-
-__global__ void matMulvec(double *a, double *b, double *c, int row, int col, bool transpose = false)
-{
-    int i = threadIdx.x + blockDim.x * blockIdx.x;
-    double sum = 0;
-    if(transpose){
-        if(i < col){
-            for(int j = 0; j < row; j++){
-                sum += a[j * col + i] * b[j];
-            }
-            c[i] = sum;
-        }
-    }else{
-        if(i < row){
-            for(int j = 0; j < col; j++){
-                sum += a[i * col + j] * b[j];
-            }
-            c[i] = sum;
-        }
-    }
-}
-
 // ======================================================
 
 void NeuralNetwork::fillRandom(double *arr, int size)
@@ -65,7 +35,6 @@ void NeuralNetwork::fillRandom(double *arr, int size)
     curandGenerator_t gen;
     curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
     curandSetPseudoRandomGeneratorSeed(gen, clock());
-    // curandGenerateNormal(gen, arr, size, 0, 1); // standard normal distribution
     curandGenerateNormalDouble(gen, arr, size, 0, 1); // standard normal distribution
     CUDA_CHECK(cudaGetLastError());
 }
@@ -99,7 +68,6 @@ NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers)
         CUDA_CHECK(cudaMalloc((void **)&dev_w, sizeof(double) * layers[i + 1] * layers[i]));
         CUDA_CHECK(cudaMalloc((void **)&dev_b, sizeof(double) * layers[i + 1]));
         fillRandom(dev_w, layers[i + 1] * layers[i]);
-        // fillRandom(dev_b, layers[i + 1]);
         CUDA_CHECK(cudaMemset(dev_b, 0, layers[i + 1] * sizeof(double)));
         CUDA_CHECK(cudaGetLastError());
         w.push_back(dev_w);
@@ -114,8 +82,6 @@ NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers)
         // initialize grad vectors
         CUDA_CHECK(cudaMalloc((void **)&dev_dC_dw, sizeof(double) * layers[i + 1] * layers[i]));
         CUDA_CHECK(cudaMalloc((void **)&dev_db, sizeof(double) * layers[i + 1]));
-        // fillRandom(dev_dC_dw, layers[i+1] * layers[i]);
-        // memset<<<blocks, params.blocksize>>>(dev_db, 0.1f, layers[i+1]);
         dC_dw.push_back(dev_dC_dw);
         dC_db.push_back(dev_db);
 
@@ -128,12 +94,6 @@ NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers)
         // initialize z_prime
         CUDA_CHECK(cudaMalloc((void **)&dev_dz, sizeof(double) * layers[i + 1]));
         z_prime.push_back(dev_dz);
-
-        // initialize batch_dw batch_db
-        CUDA_CHECK(cudaMalloc((void **)&dev_dC_dw, sizeof(double) * layers[i + 1] * layers[i]));
-        CUDA_CHECK(cudaMalloc((void **)&dev_db, sizeof(double) * layers[i + 1]));
-        batch_dw.push_back(dev_dC_dw);
-        batch_db.push_back(dev_db);
     }
 }
 
@@ -151,8 +111,6 @@ NeuralNetwork::~NeuralNetwork()
             CUDA_CHECK(cudaFree(dC_dz[i]));
             CUDA_CHECK(cudaFree(dC_da[i]));
             CUDA_CHECK(cudaFree(z_prime[i]));
-            CUDA_CHECK(cudaFree(batch_dw[i]));
-            CUDA_CHECK(cudaFree(batch_db[i]));
         }
         CUDA_CHECK(cudaFree(data));
         CUDA_CHECK(cudaFree(y));
@@ -172,8 +130,6 @@ void NeuralNetwork::setParams(double learning_rate, int batch_size, int epochs)
 
 double *NeuralNetwork::forward(double *input, int size)
 {
-
-    double *output = new double[params.outputsize]();
     if (size != params.inputsize)
     {
         std::cout << "Input size does not match network input size" << std::endl;
@@ -191,23 +147,36 @@ double *NeuralNetwork::forward(double *input, int size)
         CUDA_CHECK(cudaMemset(a[l], 0, params.layers[l] * sizeof(double)));
 
         if (l == 0)
-            matMulvec<<<blocks, params.blocksize>>>(w[l], data, z[l], params.layers[l], params.inputsize);
+            CUBLAS_CHECK(
+                cublasDgemv(
+                    cublasH,
+                    CUBLAS_OP_N, params.layers[l], params.inputsize,
+                    &ALPHA, w[l], params.layers[l],
+                    data, 1,
+                    &Beta, z[l], 1
+                )
+            );
         else
-            matMulvec<<<blocks, params.blocksize>>>(w[l], a[l - 1], z[l], params.layers[l], params.layers[l - 1]);
-        CUDA_CHECK(cudaGetLastError());
+            CUBLAS_CHECK(
+                cublasDgemv(
+                    cublasH,
+                    CUBLAS_OP_N, params.layers[l], params.layers[l - 1],
+                    &ALPHA, w[l], params.layers[l],
+                    a[l - 1], 1,
+                    &Beta, z[l], 1
+                )
+            );
 
-        // // add bias
-        // vecAdd<<<blocks, params.blocksize>>>(z[l], b[l], z[l], params.layers[l]);
-        // CUDA_CHECK(cudaGetLastError());
-
+        // add bias
         CUBLAS_CHECK(cublasDaxpy(cublasH, params.layers[l], &ALPHA, b[l], 1, z[l], 1));
 
         // apply sigmoid
         sigmoid<<<blocks, params.blocksize>>>(z[l], a[l], params.layers[l]);
+        CUDA_CHECK(cudaGetLastError());
     }
     // copy output to host
+    double *output = new double[params.outputsize]();
     CUDA_CHECK(cudaMemcpy(output, a[params.num_layers - 1], sizeof(double) * params.outputsize, cudaMemcpyDeviceToHost));
-
     return output;
 }
 
@@ -235,13 +204,19 @@ void NeuralNetwork::backprop(double *h_y)
             CUBLAS_CHECK(
                 cublasDgeam(cublasH, CUBLAS_OP_N, CUBLAS_OP_N, n, 1, &ALPHA, a[l], n,&ALPHA_NEG, y, n, dC_da[l], n)
             );
-            // cost_prime<<<blocks, params.blocksize>>>(a[l], y, dC_da[l], n); // dC_da = a - y
         }
         else
         {
             // dC_da = w[l+1]^T * dC_dz[l+1]
-            // note: w[L+1]'s size is (n[l+1] * n[l])
-            matMulvec<<<blocks, params.blocksize>>>(w[l + 1], dC_dz[l + 1], dC_da[l], params.layers[l + 1], params.layers[l], true); // dC_da = w[l+1]^T * dC_dz[l+1]
+            CUBLAS_CHECK(
+                cublasDgemv(
+                    cublasH,
+                    CUBLAS_OP_T, params.layers[l + 1], params.layers[l],
+                    &ALPHA, w[l + 1], params.layers[l + 1],
+                    dC_dz[l + 1], 1,
+                    &Beta, dC_da[l], 1
+                )
+            );
         }
 
         CUDA_CHECK(cudaGetLastError());
@@ -249,46 +224,35 @@ void NeuralNetwork::backprop(double *h_y)
         CUDA_CHECK(cudaGetLastError());
 
         // calculate dC_db
-        // copy<<<blocks, params.blocksize>>>(dC_db[l], dC_dz[l], n);
-        // CUDA_CHECK(cudaGetLastError());
-        // update<<<blocks, params.blocksize>>>(batch_db[l], dC_db[l], -1.0f, n);
-        // CUDA_CHECK(cudaGetLastError());
         double alpha_db = 1.0;
-        CUBLAS_CHECK(cublasDaxpy(cublasH, n, &alpha_db, dC_dz[l], 1, batch_db[l], 1));
-
+        CUBLAS_CHECK(cublasDaxpy(cublasH, n, &alpha_db, dC_dz[l], 1, dC_dw[l], 1));
         
         // calculate dC_dw = dC_dz * a[l-1]
         if (l != 0)
         {
             blocks = std::ceil((n * params.layers[l - 1] + params.blocksize - 1) / params.blocksize);
-            cal_dw<<<blocks, params.blocksize>>>(a[l - 1], dC_dz[l], dC_dw[l], params.layers[l - 1], params.layers[l]);
-            CUDA_CHECK(cudaGetLastError());
-            // update<<<blocks, params.blocksize>>>(batch_dw[l], dC_dw[l], -1.0f, n * params.layers[l - 1]);
-            double alpha = 1.0;
-            CUBLAS_CHECK(cublasDaxpy(cublasH, n * params.layers[l - 1], &alpha, dC_dw[l], 1, batch_dw[l], 1));
+            CUBLAS_CHECK(
+                cublasDgemm(
+                    cublasH,
+                    CUBLAS_OP_N, CUBLAS_OP_N,
+                    n, params.layers[l - 1], 1,
+                    &ALPHA, dC_dz[l], n, a[l - 1], 1,
+                    &ALPHA, dC_dw[l], n
+                )
+            );
         }
         else
         {
-            const double alpha = 1.0;
-            const double beta = 0.0;
-            // CUBLAS_CHECK(
-            //     cublasDgemm(
-            //         cublasH,
-            //         CUBLAS_OP_N,CUBLAS_OP_N,
-            //         n, params.inputsize, 1,
-            //         &alpha, dC_dz[l], n, data, 1,
-            //         &beta, dC_dw[l], n
-            //     )
-            // );
-            
-            blocks = std::ceil((n * params.inputsize + params.blocksize - 1) / params.blocksize);
-            cal_dw<<<blocks, params.blocksize>>>(data, dC_dz[l], dC_dw[l], params.inputsize, params.layers[l]);
-            CUDA_CHECK(cudaGetLastError());
-            // update<<<blocks, params.blocksize>>>(batch_dw[l], dC_dw[l], -1.0f, n * params.inputsize);
-            CUBLAS_CHECK(cublasDaxpy(this->cublasH, n * params.inputsize, &alpha, dC_dw[l], 1, batch_dw[l], 1));
+            CUBLAS_CHECK(
+                cublasDgemm(
+                    cublasH,
+                    CUBLAS_OP_N,CUBLAS_OP_N,
+                    n, params.inputsize, 1,
+                    &ALPHA, dC_dz[l], n, data, 1,
+                    &ALPHA, dC_dw[l], n
+                )
+            );
         }
-
-        CUDA_CHECK(cudaGetLastError());
     }
 }
 
@@ -298,8 +262,8 @@ void NeuralNetwork::update_weights_and_biases()
     int n = params.inputsize;
     for (int l = 0; l < params.num_layers; l++)
     {
-        CUBLAS_CHECK(cublasDaxpy(this->cublasH, n * params.layers[l], &alpha, batch_dw[l], 1, w[l], 1));
-        CUBLAS_CHECK(cublasDaxpy(this->cublasH, params.layers[l], &alpha, batch_db[l], 1, b[l], 1));
+        CUBLAS_CHECK(cublasDaxpy(this->cublasH, n * params.layers[l], &alpha, dC_dw[l], 1, w[l], 1));
+        CUBLAS_CHECK(cublasDaxpy(this->cublasH, params.layers[l], &alpha, dC_dw[l], 1, b[l], 1));
         n = params.layers[l];
     }
 }
@@ -312,7 +276,7 @@ void NeuralNetwork::train(std::vector<double *> &training_data, std::vector<doub
         return;
     }
 
-    for (int ep = 0; ep < params.epochs; ep++)
+    for (int ep = 1; ep <= params.epochs; ep++)
     {
         CUDA_CHECK(cudaDeviceSynchronize());
 
@@ -340,34 +304,16 @@ void NeuralNetwork::train(std::vector<double *> &training_data, std::vector<doub
             mini_batch(training_data, training_label, params.batchsize, batch * params.batchsize);
         }
 
-        fflush(stdout);
+        // evaluate test data
         int correct = 0;
         double test_loss = 0.0f;
-        for (int i = 0; i < test_data.size(); i++)
-        {
-            double *output = forward(test_data[i], params.inputsize);
-            int max_index = 0;
-            for (int j = 0; j < params.outputsize; j++)
-            {
-                if (output[j] > output[max_index])
-                    max_index = j;
-                if (j == test_label[i])
-                    test_loss += (1.0f - output[j]) * (1.0f - output[j]);
-                else
-                    test_loss += output[j] * output[j];
-            }
-            if (max_index == test_label[i])
-                correct++;
-        }
-        test_loss /= 2;
-
-        printf("%d/%d, Train loss: %lf, Test loss: %lf\n", correct, (int)test_data.size(), loss, test_loss);
+        evaluate(test_data, test_label, correct, test_loss);
+        printf(" %d/%d, Train loss: %lf, Test loss: %lf\n", correct, (int)test_data.size(), loss, test_loss);
     }
 }
 
 void NeuralNetwork::mini_batch(std::vector<double *> &training_data, std::vector<double *> &training_label, int batch_size, int start)
 {
-
     int end = start + batch_size;
     if (end > training_data.size())
     {
@@ -375,12 +321,12 @@ void NeuralNetwork::mini_batch(std::vector<double *> &training_data, std::vector
         return;
     }
 
-    // initialize batch_dw and batch_db
+    // initialize dC_dw and dC_dw
     int n = params.inputsize;
     for (int l = 0; l < params.num_layers; l++)
     {
-        CUDA_CHECK(cudaMemset(batch_dw[l], 0, sizeof(double) * n * params.layers[l]));
-        CUDA_CHECK(cudaMemset(batch_db[l], 0, sizeof(double) * params.layers[l]));
+        CUDA_CHECK(cudaMemset(dC_dw[l], 0, sizeof(double) * n * params.layers[l]));
+        CUDA_CHECK(cudaMemset(dC_dw[l], 0, sizeof(double) * params.layers[l]));
         n = params.layers[l];
     }
 
@@ -400,10 +346,29 @@ void NeuralNetwork::mini_batch(std::vector<double *> &training_data, std::vector
     CUDA_CHECK(cudaDeviceSynchronize());
 }
 
+void NeuralNetwork::evaluate(std::vector<double *> &test_data, std::vector<int> &test_label, int &correct, double& test_loss)
+{
+    for (int i = 0; i < test_data.size(); i++)
+    {
+        double *output = forward(test_data[i], params.inputsize);
+        int max_index = 0;
+        for (int j = 0; j < params.outputsize; j++)
+        {
+            if(j == test_label[i])
+                test_loss += (1.0f - output[j]) * (1.0f - output[j]);
+            else
+                test_loss += output[j] * output[j];
+            if (output[j] > output[max_index])
+                max_index = j;
+        }
+        if (max_index == test_label[i])
+            correct++;
+    }
+    test_loss /= 2;
+}
+
 void NeuralNetwork::save()
 {
-    // time stamp + params + scv
-
     std::ofstream file;
     // system time stamp
     std::time_t t = std::time(0);
@@ -433,7 +398,7 @@ void NeuralNetwork::save()
         {
             for (int k = 0; k < n; k++)
             {
-                file << w[i][j * n + k] << ",";
+                file << w[i][k * params.layers[i-1] + j] << ",";
             }
             file << std::endl;
         }
@@ -461,7 +426,6 @@ void NeuralNetwork::save()
 void NeuralNetwork::_debug_get_weights_and_biases(std::vector<double *> w, std::vector<double *> b)
 {
     // copy weights and biases to host
-
     int n = params.inputsize;
     for (int i = 0; i < params.num_layers; i++)
     {
@@ -474,7 +438,6 @@ void NeuralNetwork::_debug_get_weights_and_biases(std::vector<double *> w, std::
 void NeuralNetwork::_debug_get_grad(std::vector<double *> dw, std::vector<double *> db)
 {
     // copy weights and biases to host
-
     int n = params.inputsize;
     for (int i = 0; i < params.num_layers; i++)
     {

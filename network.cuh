@@ -52,9 +52,6 @@ class NeuralNetwork
     std::vector<double*> dC_dw; // dc_dw = dc_dz * dz_dw = dc_dz * a
     std::vector<double*> dC_db; // dc_db = dc_dz * dz_db = dc_dz * 1
 
-    std::vector<double*> batch_dw;
-    std::vector<double*> batch_db;
-
     void fillRandom(double* arr, int size);
     void fillZero(double* arr, int size);
 
@@ -86,7 +83,7 @@ public:
     void update_weights_and_biases();
     void train(std::vector<double*> &training_data, std::vector<double*> training_label, std::vector<double*> &test_data, std::vector<int> &test_label);
     void mini_batch(std::vector<double*> &training_data, std::vector<double*> &training_label, int batch_size, int start);
-
+    void evaluate(std::vector<double*> &test_data, std::vector<int> &test_label, int &correct, double &loss);
     void save(); // save the weights and biases
 
     #ifdef DEBUG
