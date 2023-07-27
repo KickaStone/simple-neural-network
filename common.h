@@ -60,3 +60,6 @@
             throw std::runtime_error("cublas error");                                              \
         }                                                                                          \
     } while (0)
+
+#define IDX2F(i,j,ld) ((((j)-1)*(ld))+((i)-1))
+#define IDX2C(i,j,ld) (((j)*(ld))+(i))
