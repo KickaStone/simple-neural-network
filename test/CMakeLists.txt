@@ -5,7 +5,7 @@ set(this Test)
 set(SOURCES 
     # kernel_test.cu
     net_test.cu
-    # load_test.cu 
+    load_test.cu 
 )
 
 
