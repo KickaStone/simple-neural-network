@@ -15,7 +15,6 @@
 #include "common.h"
 
 #define DEBUG
-
 struct Params
 {
     std::vector<int> layers;

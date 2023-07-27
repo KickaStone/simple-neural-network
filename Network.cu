@@ -2,6 +2,10 @@
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 50
 
+const double ALPHA = 1.0;
+const double Beta = 0.0;
+const double ALPHA_NEG = -1.0;
+
 void NeuralNetwork::fillRandom(double *arr, int size)
 {
     curandGenerator_t gen;
@@ -132,9 +136,11 @@ double *NeuralNetwork::forward(double *input, int size)
             matMulvec<<<blocks, params.blocksize>>>(w[l], a[l - 1], z[l], params.layers[l], params.layers[l - 1]);
         CUDA_CHECK(cudaGetLastError());
 
-        // add bias
-        vecAdd<<<blocks, params.blocksize>>>(z[l], b[l], z[l], params.layers[l]);
-        CUDA_CHECK(cudaGetLastError());
+        // // add bias
+        // vecAdd<<<blocks, params.blocksize>>>(z[l], b[l], z[l], params.layers[l]);
+        // CUDA_CHECK(cudaGetLastError());
+
+        CUBLAS_CHECK(cublasDaxpy(cublasH, params.layers[l], &ALPHA, b[l], 1, z[l], 1));
 
         // apply sigmoid
         sigmoid_ztoa<<<blocks, params.blocksize>>>(z[l], a[l], params.layers[l]);
@@ -172,7 +178,10 @@ void NeuralNetwork::backprop(double *h_y)
         // calculate delta
         if (l == params.num_layers - 1)
         {
-            cost_prime<<<blocks, params.blocksize>>>(a[l], y, dC_da[l], n); // dC_da = a - y
+            CUBLAS_CHECK(
+                cublasDgeam(cublasH, CUBLAS_OP_N, CUBLAS_OP_N, n, 1, &ALPHA, a[l], n,&ALPHA_NEG, y, n, dC_da[l], n)
+            );
+            // cost_prime<<<blocks, params.blocksize>>>(a[l], y, dC_da[l], n); // dC_da = a - y
         }
         else
         {
@@ -206,8 +215,18 @@ void NeuralNetwork::backprop(double *h_y)
         }
         else
         {
-            double alpha = 1.0;
-
+            const double alpha = 1.0;
+            const double beta = 0.0;
+            // CUBLAS_CHECK(
+            //     cublasDgemm(
+            //         cublasH,
+            //         CUBLAS_OP_N,CUBLAS_OP_N,
+            //         n, params.inputsize, 1,
+            //         &alpha, dC_dz[l], n, data, 1,
+            //         &beta, dC_dw[l], n
+            //     )
+            // );
+            
             blocks = std::ceil((n * params.inputsize + params.blocksize - 1) / params.blocksize);
             cal_dw<<<blocks, params.blocksize>>>(data, dC_dz[l], dC_dw[l], params.inputsize, params.layers[l]);
             CUDA_CHECK(cudaGetLastError());
