@@ -14,12 +14,10 @@ add_subdirectory(googletest)
 set(HEADER_SET
     mnist.h
     Mnist_helper.h
-    mathkernel.cuh
     network.cuh
 )
 
 set(SOURCE_SET
-    mathkernel.cu
     Mnist_helper.cpp
     Network.cu
 )

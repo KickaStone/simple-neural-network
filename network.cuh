@@ -10,8 +10,6 @@
 #include <random>
 #include <cuda_runtime.h>
 
-
-#include "mathkernel.cuh"
 #include "common.h"
 
 #define DEBUG

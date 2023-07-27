@@ -6,6 +6,60 @@ const double ALPHA = 1.0;
 const double Beta = 0.0;
 const double ALPHA_NEG = -1.0;
 
+// ===================== kernels =======================
+__global__ void hadamard_product(double *a, double *b, double *c, int size)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < size)
+        c[i] = a[i] * b[i];
+}
+
+__global__ void sigmoid(double *z, double *a, int size)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < size)
+        a[i] = 1.0f / (1.0f + expf(-z[i]));
+}
+
+__global__ void sigmoid_derivative(double *a, double *z, int size)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < size)
+        z[i] = a[i] * (1.0f - a[i]);
+}
+
+__global__ void cal_dw(double *a, double *delta, double *dC_dw, int input_size, int output_size)
+{
+    // dC_dw(j, k) = a[l-1](k) * delta[j]
+    int tid = threadIdx.x + blockDim.x * blockIdx.x;
+    if(tid < input_size * output_size){
+        dC_dw[tid] = delta[tid / input_size] * a[tid % input_size];
+    }
+}
+
+__global__ void matMulvec(double *a, double *b, double *c, int row, int col, bool transpose = false)
+{
+    int i = threadIdx.x + blockDim.x * blockIdx.x;
+    double sum = 0;
+    if(transpose){
+        if(i < col){
+            for(int j = 0; j < row; j++){
+                sum += a[j * col + i] * b[j];
+            }
+            c[i] = sum;
+        }
+    }else{
+        if(i < row){
+            for(int j = 0; j < col; j++){
+                sum += a[i * col + j] * b[j];
+            }
+            c[i] = sum;
+        }
+    }
+}
+
+// ======================================================
+
 void NeuralNetwork::fillRandom(double *arr, int size)
 {
     curandGenerator_t gen;
@@ -46,8 +100,7 @@ NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers)
         CUDA_CHECK(cudaMalloc((void **)&dev_b, sizeof(double) * layers[i + 1]));
         fillRandom(dev_w, layers[i + 1] * layers[i]);
         // fillRandom(dev_b, layers[i + 1]);
-        blocks = (layers[i+1] + params.blocksize - 1) / params.blocksize;
-        memset<<<blocks, params.blocksize>>>(dev_b, 0.0f, layers[i+1]);
+        CUDA_CHECK(cudaMemset(dev_b, 0, layers[i + 1] * sizeof(double)));
         CUDA_CHECK(cudaGetLastError());
         w.push_back(dev_w);
         b.push_back(dev_b);
@@ -110,6 +163,13 @@ NeuralNetwork::~NeuralNetwork()
     }
 }
 
+void NeuralNetwork::setParams(double learning_rate, int batch_size, int epochs)
+{
+    params.eta       = learning_rate;
+    params.batchsize = batch_size;
+    params.epochs    = epochs;
+}
+
 double *NeuralNetwork::forward(double *input, int size)
 {
 
@@ -143,7 +203,7 @@ double *NeuralNetwork::forward(double *input, int size)
         CUBLAS_CHECK(cublasDaxpy(cublasH, params.layers[l], &ALPHA, b[l], 1, z[l], 1));
 
         // apply sigmoid
-        sigmoid_ztoa<<<blocks, params.blocksize>>>(z[l], a[l], params.layers[l]);
+        sigmoid<<<blocks, params.blocksize>>>(z[l], a[l], params.layers[l]);
     }
     // copy output to host
     CUDA_CHECK(cudaMemcpy(output, a[params.num_layers - 1], sizeof(double) * params.outputsize, cudaMemcpyDeviceToHost));
@@ -151,12 +211,6 @@ double *NeuralNetwork::forward(double *input, int size)
     return output;
 }
 
-void NeuralNetwork::setParams(double learning_rate, int batch_size, int epochs)
-{
-    params.eta       = learning_rate;
-    params.batchsize = batch_size;
-    params.epochs    = epochs;
-}
 
 void NeuralNetwork::backprop(double *h_y)
 {
@@ -172,7 +226,7 @@ void NeuralNetwork::backprop(double *h_y)
         blocks = std::ceil((n + params.blocksize - 1) / params.blocksize);
 
         // calculate z_prime
-        sigmoid_z_prime<<<blocks, params.blocksize>>>(a[l], z_prime[l], n);
+        sigmoid_derivative<<<blocks, params.blocksize>>>(a[l], z_prime[l], n);
         CUDA_CHECK(cudaGetLastError());
 
         // calculate delta
@@ -191,7 +245,7 @@ void NeuralNetwork::backprop(double *h_y)
         }
 
         CUDA_CHECK(cudaGetLastError());
-        vecMul<<<blocks, params.blocksize>>>(dC_da[l], z_prime[l], dC_dz[l], n); // dC_dz = dC_da * z_prime
+        hadamard_product<<<blocks, params.blocksize>>>(dC_da[l], z_prime[l], dC_dz[l], n); // dC_dz = dC_da * z_prime
         CUDA_CHECK(cudaGetLastError());
 
         // calculate dC_db

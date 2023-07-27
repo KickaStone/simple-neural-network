@@ -38,5 +38,5 @@ TEST(Train_Test, handwriting_recognition)
     NeuralNetwork nn = NeuralNetwork(784, layers);
     nn.setParams(3.0, 10, 1);
     nn.train(training_images, y, test_images, test_labels);
-    nn.save();
+    // nn.save();
 }
