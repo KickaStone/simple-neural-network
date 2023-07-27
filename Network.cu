@@ -27,6 +27,8 @@ NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers)
     params.eta        = 0;
     params.batchsize  = 0;
 
+    CUBLAS_CHECK(cublasCreate(&this->cublasH));
+
     CUDA_CHECK(cudaMalloc((void **)&data, sizeof(double) * input));
     CUDA_CHECK(cudaMalloc((void **)&y, sizeof(double) * layers[layers.size() - 1]));
 
@@ -80,17 +82,27 @@ NeuralNetwork::NeuralNetwork(int input, std::vector<int> layers)
 
 NeuralNetwork::~NeuralNetwork()
 {
-    for (int i = 0; i < params.num_layers; i++)
-    {
-        CUDA_CHECK(cudaFree(w[i]));
-        CUDA_CHECK(cudaFree(b[i]));
-        CUDA_CHECK(cudaFree(z[i]));
-        CUDA_CHECK(cudaFree(a[i]));
-        CUDA_CHECK(cudaFree(dC_dw[i]));
-        CUDA_CHECK(cudaFree(dC_db[i]));
-        CUDA_CHECK(cudaFree(dC_dz[i]));
-        CUDA_CHECK(cudaFree(dC_da[i]));
-        CUDA_CHECK(cudaFree(z_prime[i]));
+    try{
+        for (int i = 0; i < params.num_layers; i++)
+        {
+            CUDA_CHECK(cudaFree(w[i]));
+            CUDA_CHECK(cudaFree(b[i]));
+            CUDA_CHECK(cudaFree(z[i]));
+            CUDA_CHECK(cudaFree(a[i]));
+            CUDA_CHECK(cudaFree(dC_dw[i]));
+            CUDA_CHECK(cudaFree(dC_db[i]));
+            CUDA_CHECK(cudaFree(dC_dz[i]));
+            CUDA_CHECK(cudaFree(dC_da[i]));
+            CUDA_CHECK(cudaFree(z_prime[i]));
+            CUDA_CHECK(cudaFree(batch_dw[i]));
+            CUDA_CHECK(cudaFree(batch_db[i]));
+        }
+        CUDA_CHECK(cudaFree(data));
+        CUDA_CHECK(cudaFree(y));
+        CUBLAS_CHECK(cublasDestroy(this->cublasH));
+    }catch(...){
+        std::cout << "Error in destructor" << std::endl;
+        exit(1);
     }
 }
 
@@ -142,13 +154,13 @@ void NeuralNetwork::setParams(double learning_rate, int batch_size, int epochs)
 
 void NeuralNetwork::backprop(double *h_y)
 {
-
+    
     int n = -1; // n  number of neurons in layer l
     // copy y to device
     CUDA_CHECK(cudaMemcpy(this->y, h_y, sizeof(double) * params.outputsize, cudaMemcpyHostToDevice));
     for (int l = params.num_layers - 1; l >= 0; l--)
     {
-
+        
         n = params.layers[l];
 
         blocks = std::ceil((n + params.blocksize - 1) / params.blocksize);
@@ -174,25 +186,33 @@ void NeuralNetwork::backprop(double *h_y)
         CUDA_CHECK(cudaGetLastError());
 
         // calculate dC_db
-        copy<<<blocks, params.blocksize>>>(dC_db[l], dC_dz[l], n);
-        CUDA_CHECK(cudaGetLastError());
-        update<<<blocks, params.blocksize>>>(batch_db[l], dC_db[l], -1.0f, n);
-        CUDA_CHECK(cudaGetLastError());
+        // copy<<<blocks, params.blocksize>>>(dC_db[l], dC_dz[l], n);
+        // CUDA_CHECK(cudaGetLastError());
+        // update<<<blocks, params.blocksize>>>(batch_db[l], dC_db[l], -1.0f, n);
+        // CUDA_CHECK(cudaGetLastError());
+        double alpha_db = 1.0;
+        CUBLAS_CHECK(cublasDaxpy(cublasH, n, &alpha_db, dC_dz[l], 1, batch_db[l], 1));
 
+        
         // calculate dC_dw = dC_dz * a[l-1]
         if (l != 0)
         {
             blocks = std::ceil((n * params.layers[l - 1] + params.blocksize - 1) / params.blocksize);
             cal_dw<<<blocks, params.blocksize>>>(a[l - 1], dC_dz[l], dC_dw[l], params.layers[l - 1], params.layers[l]);
             CUDA_CHECK(cudaGetLastError());
-            update<<<blocks, params.blocksize>>>(batch_dw[l], dC_dw[l], -1.0f, n * params.layers[l - 1]);
+            // update<<<blocks, params.blocksize>>>(batch_dw[l], dC_dw[l], -1.0f, n * params.layers[l - 1]);
+            double alpha = 1.0;
+            CUBLAS_CHECK(cublasDaxpy(cublasH, n * params.layers[l - 1], &alpha, dC_dw[l], 1, batch_dw[l], 1));
         }
         else
         {
+            double alpha = 1.0;
+
             blocks = std::ceil((n * params.inputsize + params.blocksize - 1) / params.blocksize);
             cal_dw<<<blocks, params.blocksize>>>(data, dC_dz[l], dC_dw[l], params.inputsize, params.layers[l]);
             CUDA_CHECK(cudaGetLastError());
-            update<<<blocks, params.blocksize>>>(batch_dw[l], dC_dw[l], -1.0f, n * params.inputsize);
+            // update<<<blocks, params.blocksize>>>(batch_dw[l], dC_dw[l], -1.0f, n * params.inputsize);
+            CUBLAS_CHECK(cublasDaxpy(this->cublasH, n * params.inputsize, &alpha, dC_dw[l], 1, batch_dw[l], 1));
         }
 
         CUDA_CHECK(cudaGetLastError());
@@ -201,17 +221,12 @@ void NeuralNetwork::backprop(double *h_y)
 
 void NeuralNetwork::update_weights_and_biases()
 {
-    // update weights
-
+    double alpha = -1.0 * params.eta / params.batchsize;
     int n = params.inputsize;
     for (int l = 0; l < params.num_layers; l++)
     {
-        blocks = std::ceil((params.layers[l] * n + params.blocksize - 1) / params.blocksize);
-        update<<<blocks, params.blocksize>>>(w[l], batch_dw[l], params.eta / params.batchsize, params.layers[l] * n);
-        CUDA_CHECK(cudaGetLastError());
-        blocks = std::ceil((params.layers[l] + params.blocksize - 1) / params.blocksize);
-        update<<<blocks, params.blocksize>>>(b[l], batch_db[l], params.eta / params.batchsize, params.layers[l]);
-        CUDA_CHECK(cudaGetLastError());
+        CUBLAS_CHECK(cublasDaxpy(this->cublasH, n * params.layers[l], &alpha, batch_dw[l], 1, w[l], 1));
+        CUBLAS_CHECK(cublasDaxpy(this->cublasH, params.layers[l], &alpha, batch_db[l], 1, b[l], 1));
         n = params.layers[l];
     }
 }

@@ -6,7 +6,8 @@ project(${this} C CXX CUDA)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD 11)
+
 
 add_subdirectory(googletest)
 
@@ -28,8 +29,14 @@ enable_testing()
 add_library(${this} STATIC ${SOURCE_SET} ${HEADER_SET})
 
 target_link_libraries(
-    ${this} PRIVATE
+    ${this} PUBLIC
     curand
+    cublas
+)
+
+set_target_properties(
+    ${this} PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
 )
 
 add_subdirectory(test)

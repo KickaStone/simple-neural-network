@@ -6,13 +6,13 @@
 #include "../network.cuh"
 
 std::vector<int> layers = {2, 2};
-NeuralNetwork nn = NeuralNetwork(2, layers, 0.5);
+NeuralNetwork nn = NeuralNetwork(2, layers);
 double *input = new double[2]{0.05f, 0.1f};
 double *y = new double[2]{0.01f, 0.99f};
 
 TEST(NetworkTest, init)
 {
-    nn.setParams(0.5, 1);
+    nn.setParams(0.5, 1, 1);
     std::vector<double *> w, b;
 
     double w1[] = {0.15f, 0.2f, 0.25f, 0.30f};

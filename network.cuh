@@ -36,6 +36,7 @@ class NeuralNetwork
 {
     Params params;
     int blocks;
+    cublasHandle_t cublasH;
 
     std::vector<double*> input;
     std::vector<int> labal;

@@ -89,10 +89,10 @@ void load(std::vector<float *> &data, std::vector<int> &label, std::vector<float
 
 void load(std::vector<double *> &data, std::vector<int> &label, std::vector<double *> &test_data, std::vector<int> &test_label)
 {
-	char* data_fn = "../../data/train-images-idx3-ubyte";
-	char* target_fn = "../../data/train-labels-idx1-ubyte";
-	char* test_data_fn = "../../data/t10k-images-idx3-ubyte";
-	char* test_target_fn = "../../data/t10k-labels-idx1-ubyte";
+	char* data_fn = "data/train-images-idx3-ubyte";
+	char* target_fn = "data/train-labels-idx1-ubyte";
+	char* test_data_fn = "data/t10k-images-idx3-ubyte";
+	char* test_target_fn = "data/t10k-labels-idx1-ubyte";
 
 	mnist_data *data1, *data2;
 	unsigned int cnt1, cnt2;
