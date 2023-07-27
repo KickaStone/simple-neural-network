@@ -3,12 +3,8 @@ cmake_minimum_required(VERSION 3.27)
 set(this Test)
 
 set(SOURCES 
-    # kernel_test.cu
-    net_test.cu
-    load_test.cu 
+    mlp_test.cu
 )
-
-
 
 add_executable(${this} ${SOURCES})
 
