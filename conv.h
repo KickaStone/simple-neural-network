@@ -9,7 +9,7 @@ class Conv : public Layer {
 private:
     std::vector<double*> kernel;
     double* b;
-    double* input;
+    double* input;                    // TODO: volumes support
     double* output;
     std::vector<double*> feature_map; // TODO: change to double*
     std::vector<double*> dk;          // TODO: change to double*
