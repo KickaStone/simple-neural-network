@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.26)
 
 set(this Network)
 
@@ -9,22 +9,33 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# enable_testing()
+find_package(OpenCV REQUIRED)
+
+enable_testing()
 
 add_subdirectory(googletest)
 
 set(HEADER_SET
-    Network.h
-    mnist.h
-    Mnist_helper.h
+        layer.h
+        dense.h
+        activation.h
+        MLP.h
+        mnist_loader.h
 )
 
 set(SOURCE_SET
-    Network.cpp
-    Mnist_helper.cpp
-    # main.cpp 
+        convolution.cu
+        dense.cpp
+        MLP.cpp
+        Net.h
+        # main.cpp
 )
 
 add_library(${this} STATIC  ${HEADER_SET} ${SOURCE_SET})
 
 add_subdirectory(test)
+
+target_link_libraries(
+    ${this} PUBLIC
+    ${OpenCV_LIBS}
+)

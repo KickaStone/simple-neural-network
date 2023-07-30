@@ -19,10 +19,10 @@ protected:
 };
 
 TEST_F(NetworkTest, testLoad){
-    char* training_data_file = "E:/projects/Cuda/Network/data/train-images-idx3-ubyte";
-    char* training_label_file = "E:/projects/Cuda/Network/data/train-labels-idx1-ubyte";
-    char* test_data_file = "E:/projects/Cuda/Network/data/t10k-images-idx3-ubyte";
-    char* test_label_file = "E:/projects/Cuda/Network/data/t10k-labels-idx1-ubyte";
+    char* training_data_file = "E:/projects/Cuda/Network/data/train-images.idx3-ubyte";
+    char* training_label_file = "E:/projects/Cuda/Network/data/train-labels.idx1-ubyte";
+    char* test_data_file = "E:/projects/Cuda/Network/data/t10k-images.idx3-ubyte";
+    char* test_label_file = "E:/projects/Cuda/Network/data/t10k-labels.idx1-ubyte";
 
     unsigned int num_training_data = 0;
     unsigned int num_test_data = 0;
