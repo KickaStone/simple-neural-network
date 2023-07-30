@@ -41,33 +41,6 @@ namespace Activation{
         TANH,
         NONE
     };
-
-    struct ActivationFunctions{
-        std::function<double(double)> activation;
-        std::function<double(double)> derivative;
-        explicit ActivationFunctions(ActivationFunctionType func){
-            switch(func){
-                case ActivationFunctionType::RELU:
-                    activation = relu;
-                    derivative = relu_derivative;
-                    break;
-                case ActivationFunctionType::SIGMOID:
-                    activation = sigmoid;
-                    derivative = sigmoid_derivative;
-                    break;
-                case ActivationFunctionType::TANH:
-                    activation = tanh;
-                    derivative = tanh_derivative;
-                    break;
-                case ActivationFunctionType::NONE:
-                    activation = [](double x){return x;};
-                    derivative = [](double x){return 1.0;};
-                    break;
-                default:
-                    throw "Activation function not supported";
-            }
-        }
-    };
 }
 
 #endif //NETWORK_ACTIVATION_H

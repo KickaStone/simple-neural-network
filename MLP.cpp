@@ -7,7 +7,7 @@
 MLP::MLP(int num_layers, std::vector<int> layers) {
     this->num_layers = num_layers;
     for (int i = 0; i < num_layers - 1; ++i) {
-        this->layers.push_back(new Dense(layers[i], layers[i + 1], Activation::ActivationFunctions(Activation::ActivationFunctionType::SIGMOID)));
+        this->layers.push_back(new Dense(layers[i], layers[i + 1], Activation::ActivationFunctionType::SIGMOID));
     }
     total_loss = 0;
     output_dim = layers[num_layers - 1];

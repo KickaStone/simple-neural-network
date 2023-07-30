@@ -13,7 +13,8 @@ private:
         double *input;
     
     public:
-        Dense(int input_size, int output_size, Activation::ActivationFunctions af);
+        Dense(int input_size, int output_size, Activation::ActivationFunctionType TYPE);
+
         ~Dense() override;
         double* forward(double *input_data) override;
         double* backward(double *grad) override;

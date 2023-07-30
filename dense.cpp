@@ -3,7 +3,7 @@
 //
 #include "dense.h"
 
-Dense::Dense(int input_size, int output_size, Activation::ActivationFunctions af) : Layer(input_size, output_size, af) {
+Dense::Dense(int input_size, int output_size, Activation::ActivationFunctionType type) : Layer(input_size, output_size, type) {
     this->input = nullptr;
     this->w = new double[input_size * output_size];
     this->b = new double[output_size];
@@ -40,7 +40,7 @@ double* Dense::forward(double *input_data) {
         for (int j = 0; j < inputSize; j++) {
             a[i] += w[i * inputSize + j] * input_data[j];
         }
-        a[i] = activationFunc.activation(a[i]);
+        a[i] = activation(a[i]);
     }
     return a;
 }
@@ -48,7 +48,7 @@ double* Dense::forward(double *input_data) {
 double* Dense::backward(double *output_grad) {
     // output layer's dC/dz
     for(int i = 0; i < outputSize; i++){
-        dz[i] = output_grad[i] * activationFunc.derivative(a[i]);
+        dz[i] = output_grad[i] * activationDerivative(a[i]);
     }
 
     for(int i = 0; i < inputSize; i++){
