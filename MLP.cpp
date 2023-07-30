@@ -41,10 +41,20 @@ MLP::~MLP() {
     }
 }
 
-
 void MLP::loss(const double *output, const double *label) {
     for(int i = 0; i < output_dim; ++i) {
         total_loss += (output[i] - label[i]) * (output[i] - label[i]) * 0.5;
+    }
+}
+
+void MLP::shuffle(std::vector<double*> &x, std::vector<double*> &y)
+{
+    std::random_device rd;
+    std::mt19937 g(rd());
+    for(int i = 0; i < x.size(); ++i) {
+        int k = std::uniform_int_distribution<int>(0, x.size() - 1)(g);
+        std::swap(x[i], x[k]);
+        std::swap(y[i], y[k]);
     }
 }
 
@@ -52,6 +62,8 @@ void MLP::train(int epoch, int batch_size, double lr, std::vector<double *> &tra
                 std::vector<double *> &train_label) {
     for (int i = 0; i < epoch; ++i) {
         std::cout << "epoch: " << i << " ....";
+
+        shuffle(train_data, train_label);
         total_loss = 0;
         for (int j = 0; j < train_data.size(); j += batch_size) {
             for(int k = 0; k < batch_size; ++k) {

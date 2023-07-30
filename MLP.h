@@ -23,6 +23,7 @@ public:
 private:
     double total_loss = 0;
     void loss(const double *output, const double *label);
+    void shuffle(std::vector<double*>& x, std::vector<double*>& y);    
 };
 
 
