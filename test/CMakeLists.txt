@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.26)
 set(this Test)
 
 set(Sources
-    mlp_test.cpp
+    # mlp_test.cpp
+    conv_test.cpp
 #    loader_test.cpp
 )
 

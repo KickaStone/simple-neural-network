@@ -21,14 +21,15 @@ set(HEADER_SET
         activation.h
         MLP.h
         mnist_loader.h
+        conv.h
 )
 
 set(SOURCE_SET
-        convolution.cu
         dense.cpp
         MLP.cpp
         Net.h
-        # main.cpp
+        conv.cpp
+        conv.h
 )
 
 add_library(${this} STATIC  ${HEADER_SET} ${SOURCE_SET})
