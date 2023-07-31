@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "../conv.h"
-#include "../activation.h"
+#include "../layers/conv.h"
+#include "../utils/activation.h"
 
 TEST(conv, cross_correlation){
     double img[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};

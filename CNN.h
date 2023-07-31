@@ -5,7 +5,7 @@
 #ifndef NETWORK_CNN_H
 #define NETWORK_CNN_H
 
-#include "layer.h"
+#include "layers/layer.h"
 #include "net.h"
 
 class CNN : public Net{

@@ -3,7 +3,7 @@
 //
 #include <gtest/gtest.h>
 
-#include "../Pooling.h"
+#include "../layers/pooling.h"
 
 TEST(pooling_test, test1){
     double input[32] = {
@@ -18,7 +18,7 @@ TEST(pooling_test, test1){
     };
 
 
-    Pooling pooling(2, 4, 4, 2, 0, 2, PoolingType::AVG, Activation::ActivationFunctionType::NONE);
+    pooling pooling(2, 4, 4, 2, 0, 2, PoolingType::AVG, Activation::ActivationFunctionType::NONE);
     double* output = pooling.forward(input);
 //    EXPECT_EQ(a[0], 6);
 //    EXPECT_EQ(a[1], 8);

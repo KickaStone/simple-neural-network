@@ -9,7 +9,7 @@
 #include <random>
 #include <algorithm>
 #include <vector>
-#include "layer.h"
+#include "layers/layer.h"
 
 class Net {
 protected:

@@ -6,14 +6,14 @@
 #define NETWORK_POOLING_H
 
 #include "layer.h"
-#include "convolution.h"
+#include "../utils/convolution.h"
 
 enum class PoolingType{
     MAX,
     AVG
 };
 
-class Pooling : public Layer{
+class pooling : public Layer{
 private:
     int Nk;
     int stride;
@@ -30,8 +30,8 @@ private:
     int* record; // record the index of max value
 
 public:
-    Pooling(int volumeSize, int Nx, int Ny, int Nk, int p, int stride, PoolingType type1, Activation::ActivationFunctionType type2);
-    ~Pooling() override;
+    pooling(int volumeSize, int Nx, int Ny, int Nk, int p, int stride, PoolingType type1, Activation::ActivationFunctionType type2);
+    ~pooling() override;
 
     double* forward(const double *x) override;
     double* backward(const double *grad) override;

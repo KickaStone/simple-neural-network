@@ -9,7 +9,6 @@ private:
         double *dw;
         double *db;
         double *dz;
-
         const double *input;
     
     public:
@@ -30,6 +29,7 @@ private:
         void setW(double *ww) { memcpy(this->w, ww, sizeof(double) * inputSize * outputSize);}
         void setB(double *bb) { memcpy(this->b, bb, sizeof(double) * outputSize);}
         void setA(double *aa) { memcpy(this->a, aa, sizeof(double) * outputSize);}
-        void setInput(double* input) { this->input = input; }
+        void setInput(const double* data) { this->input = data; }
+        void save();
 
 };

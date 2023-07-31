@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "layer.h"
-#include "convolution.h"
+#include "../utils/convolution.h"
 
 class Conv : public Layer {
 private:

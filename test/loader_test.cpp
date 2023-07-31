@@ -3,7 +3,7 @@
 //
 
 #include <gtest/gtest.h>
-#include "../mnist_loader.h"
+#include "../utils/mnist_loader.h"
 
 TEST(MnistLoaderTest, LoadMnist)
 {

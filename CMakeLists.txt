@@ -16,26 +16,26 @@ enable_testing()
 add_subdirectory(googletest)
 
 set(HEADER_SET
-        layer.h
-        dense.h
-        activation.h
+        layers/layer.h
+        layers/dense.h
+        utils/activation.h
         MLP.h
-        mnist_loader.h
-        conv.h
-        Pooling.h
-        convolution.h
+        utils/mnist_loader.h
+        layers/conv.h
+        layers/pooling.h
+        utils/convolution.h
         CNN.h
-        layer_type.h
+        layers/layer_type.h
 )
 
 set(SOURCE_SET
-        dense.cpp
+        layers/dense.cpp
         MLP.cpp
         Net.h
-        conv.cpp
-        conv.h
-        Pooling.cpp
-        convolution.cpp
+        layers/conv.cpp
+        layers/conv.h
+        layers/pooling.cpp
+        utils/convolution.cpp
         CNN.cpp
         CNN.h
 )

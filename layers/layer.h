@@ -4,7 +4,7 @@
 #include <utility>
 #include <random>
 
-#include "activation.h"
+#include "../utils/activation.h"
 
 class Layer{
     public:

@@ -2,9 +2,9 @@
 // Created by JunchengJi on 7/31/2023.
 //
 
-#include "Pooling.h"
+#include "pooling.h"
 
-Pooling::Pooling(int volumeSize, int Nx, int Ny, int Nk, int p,
+pooling::pooling(int volumeSize, int Nx, int Ny, int Nk, int p,
                  int stride, PoolingType type1, Activation::ActivationFunctionType type2) :
         Layer(
                                  Nx*Ny*volumeSize,
@@ -27,13 +27,13 @@ Pooling::Pooling(int volumeSize, int Nx, int Ny, int Nk, int p,
     input_grad = new double[Nx * Ny * volumeSize];
 }
 
-Pooling::~Pooling() {
+pooling::~pooling() {
     delete[] output;
     delete[] record;
     delete[] input_grad;
 }
 
-double *Pooling::forward(const double *x) {
+double *pooling::forward(const double *x) {
     this->input = x;
     switch(this->poolingType){
         case PoolingType::AVG:
@@ -47,12 +47,12 @@ double *Pooling::forward(const double *x) {
             }
             break;
         default:
-            throw "Pooling type not supported!";
+            throw "pooling type not supported!";
     }
     return output;
 }
 
-double *Pooling::backward(const double *grad) {
+double *pooling::backward(const double *grad) {
     double *output_grad;
     output_grad = new double[Ox * Oy * volumeSize];
     std::copy(grad, grad + Ox * Oy * volumeSize, output_grad);
@@ -102,7 +102,7 @@ double *Pooling::backward(const double *grad) {
     return input_grad;
 }
 
-void Pooling::update(double lr, int batchSize) {
+void pooling::update(double lr, int batchSize) {
 //do nothing
 }
 

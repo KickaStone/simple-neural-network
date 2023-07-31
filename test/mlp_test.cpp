@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "../mlp.h"
-#include "../mnist_loader.h"
+#include "../utils/mnist_loader.h"
 
 using namespace Activation;
 

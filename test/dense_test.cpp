@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
-#include "../dense.h"
+#include "../layers/dense.h"
 
 using namespace Activation;
 

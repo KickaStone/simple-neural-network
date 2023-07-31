@@ -3,8 +3,8 @@
 //
 #include <gtest/gtest.h>
 #include "../CNN.h"
-#include "../layer_type.h"
-#include "../mnist_loader.h"
+#include "../layers/layer_type.h"
+#include "../utils/mnist_loader.h"
 
 TEST(cnn_test, test1){
     const char* train_image_file = "E:/Projects/Cuda/Network/data/train-images.idx3-ubyte";
@@ -35,7 +35,7 @@ TEST(cnn_test, test1){
 
     CNN cnn(3, 10);
 //    cnn.addLayer(new Conv(28, 28, 5, 1, 1, 0, Activation::ActivationFunctionType::SIGMOID));
-//    cnn.addLayer(new Pooling(6, 24, 24, 2, 0, 2, PoolingType::MAX, Activation::ActivationFunctionType::NONE));
+//    cnn.addLayer(new pooling(6, 24, 24, 2, 0, 2, PoolingType::MAX, Activation::ActivationFunctionType::NONE));
 
 //    cnn.addLayer(new Dense(24*24*1,  30, Activation::ActivationFunctionType::SIGMOID));
     cnn.addLayer(new Dense(28*28*1,  30, Activation::ActivationFunctionType::SIGMOID));

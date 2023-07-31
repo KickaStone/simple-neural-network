@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include <vector>
-#include "dense.h"
+#include "layers/dense.h"
 #include "Net.h"
 
 class MLP : Net {

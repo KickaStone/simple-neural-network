@@ -87,3 +87,27 @@ void Dense::update(double lr, int batchSize) {
     std::fill(db, db + outputSize, 0);
 }
 
+void Dense::save() {
+    // get current time
+    time_t now = time(nullptr);
+    tm *ltm = localtime(&now);
+    std::string time = std::to_string(1900 + ltm->tm_year) + std::to_string(1 + ltm->tm_mon) + std::to_string(ltm->tm_mday) + std::to_string(ltm->tm_hour) + std::to_string(ltm->tm_min) + std::to_string(ltm->tm_sec);
+
+    std::string w_file = "w_" + time + ".txt";
+    std::string b_file = "b_" + time + ".txt";
+
+    FILE *fp_w = fopen(w_file.c_str(), "w");
+    FILE *fp_b = fopen(b_file.c_str(), "w");
+
+    for(int i = 0; i < outputSize; i++){
+        for(int j = 0; j < inputSize; j++){
+            fprintf(fp_w, "%f ", w[i * inputSize + j]);
+        }
+        fprintf(fp_w, "\n");
+        fprintf(fp_b, "%f\n", b[i]);
+    }
+
+    fclose(fp_w);
+    fclose(fp_b);
+}
+
