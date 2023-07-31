@@ -1,9 +1,11 @@
 #ifndef CONV_H
 #define CONV_H
 
-#include "layer.h"
-
 #include <numeric>
+#include <utility>
+
+#include "layer.h"
+#include "convolution.h"
 
 class Conv : public Layer {
 private:
@@ -24,24 +26,18 @@ private:
     int Ox, Oy;
 
 public:
-    static void padding(double *input, int Nx, int p, double *output);
-    static void correlation(double *img, double *kernel, int Nx, int Nk, int stride, double *output);
-    static void cross_correlation(double *img, double *kernel, int Nx, int Nk, int stride, double *output);
-
     Conv(int inputSize,Activation::ActivationFunctionType type, int Nx, int Ny, int kernel_size,
          int stride, int n_kernel, int padding);
-    ~Conv();
+    ~Conv() override;
     
     double* forward(double *input) override;
     double* backward(double *grad) override;
     void update(double lr, int batchSize) override;
 
-    void setKernel(int i, double *kernel);
+    void setKernel(int i, double *myKernel);
     void setBias(int i, double bias);
-    void setInput(double *input);
+    void setInput(double *x);
 
     std::vector<double*>& getDk();
-
-    
 };
 #endif // CONV_H

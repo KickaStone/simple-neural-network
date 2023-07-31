@@ -22,6 +22,10 @@ set(HEADER_SET
         MLP.h
         mnist_loader.h
         conv.h
+        Pooling.h
+        convolution.h
+        CNN.h
+        layer_type.h
 )
 
 set(SOURCE_SET
@@ -30,6 +34,10 @@ set(SOURCE_SET
         Net.h
         conv.cpp
         conv.h
+        Pooling.cpp
+        convolution.cpp
+        CNN.cpp
+        CNN.h
 )
 
 add_library(${this} STATIC  ${HEADER_SET} ${SOURCE_SET})

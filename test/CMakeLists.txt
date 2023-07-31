@@ -4,8 +4,10 @@ set(this Test)
 
 set(Sources
     # mlp_test.cpp
-    conv_test.cpp
-#    loader_test.cpp
+#    conv_test.cpp
+#        pooling_test.cpp
+        cnn_test.cpp
+        #    loader_test.cpp
 )
 
 set(Headers

@@ -48,7 +48,7 @@ double* Dense::forward(double *input_data) {
 double* Dense::backward(double *output_grad) {
     // output layer's dC/dz
     for(int i = 0; i < outputSize; i++){
-        dz[i] = output_grad[i] * activationDerivative(a[i]);
+        dz[i] = output_grad[i] * derivative(a[i]);
     }
 
     for(int i = 0; i < inputSize; i++){

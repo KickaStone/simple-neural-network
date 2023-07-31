@@ -5,7 +5,10 @@
 #ifndef NETWORK_NET_H
 #define NETWORK_NET_H
 
-
+#include <iostream>
+#include <random>
+#include <algorithm>
+#include <vector>
 #include "layer.h"
 
 class Net {

@@ -1,50 +1,5 @@
 #include "conv.h"
 
-#include <utility>
-
-void Conv::cross_correlation(double *img, double *kernel, int Nx, int Nk, int stride, double *output){
-    int Ox = (Nx - Nk) / stride + 1;
-    for(int i = 0; i < Ox; i++){
-        for(int j = 0; j < Ox; j++){
-            double sum = 0;
-            for(int k = 0; k < Nk; k++){
-                for(int l = 0; l < Nk; l++){
-                    sum += img[(i + k) * Nx + (j + l)] * kernel[k * Nk + l];
-                }
-            }
-            output[i * Ox + j] = sum;
-        }
-    }
-}
-
-void Conv::correlation(double *img, double *kernel, int Nx, int Nk, int stride, double *output){
-    int Ox = (Nx - Nk) / stride + 1;
-    for(int i = 0; i < Ox; i++){
-        for(int j = 0; j < Ox; j++){
-            double sum = 0;
-            for(int k = 0; k < Nk; k++){
-                for(int l = 0; l < Nk; l++){
-                    sum += img[(i + k) * Nx + (j + l)] * kernel[(Nk - k - 1) * Nk + (Nk - l - 1)];
-                }
-            }
-            output[i * Ox + j] = sum;
-        }
-    }
-}
-
-void Conv::padding(double *input, int Nx, int p, double *output){
-    int Nx_p = Nx + 2 * p;
-    for(int i = 0; i < Nx_p; i++){
-        for(int j = 0; j < Nx_p; j++){
-            if(i < p || i >= Nx_p - p || j < p || j >= Nx_p - p){
-                output[i * Nx_p + j] = 0;
-            } else {
-                output[i * Nx_p + j] = input[(i - p) * Nx + (j - p)];
-            }
-        }
-    }
-}
-
 Conv::Conv(int inputSize, Activation::ActivationFunctionType type, int Nx, int Ny, int kernel_size,
            int stride, int n_kernel, int padding) : Layer(inputSize, (inputSize + 2*padding - kernel_size) / stride + 1, type) {
     this->n_kernel = n_kernel;
@@ -111,7 +66,7 @@ Conv::~Conv() {
 double *Conv::forward(double *input) {
     this->input = input;
     for(int i = 0; i < n_kernel; i++){
-        cross_correlation(input, kernel[i], Nx, kernel_size, stride, feature_map[i]);
+        convolution::cross_correlation(input, kernel[i], Nx, Ny, kernel_size, stride, feature_map[i]);
     }
     // calculate output
     for(int i = 0; i < n_kernel; i++){
@@ -128,7 +83,7 @@ double *Conv::backward(double *grad) {
     // dz = grad * activationFunc.derivative(output)
     for(int i = 0; i < n_kernel; i++){
         for(int j = 0; j < Ox * Oy; j++) {
-            grad[i * Ox * Oy + j] *= activationDerivative(output[i * Ox * Oy + j]);
+            grad[i * Ox * Oy + j] *= derivative(output[i * Ox * Oy + j]);
         }
     }
 
@@ -136,7 +91,7 @@ double *Conv::backward(double *grad) {
     // DK = dz (*) input
     for(int i = 0; i < n_kernel; i++){
         auto* dki = new double[kernel_size * kernel_size];
-        cross_correlation(input, grad + i * Ox * Oy, Nx, Ox, stride, dki);
+        convolution::cross_correlation(input, grad + i * Ox * Oy, Nx, Ny, Ox, stride, dki);
         for(int j = 0; j < kernel_size*kernel_size; j++){
             dk[i][j] += dki[j];
         }
@@ -160,8 +115,8 @@ double *Conv::backward(double *grad) {
     std::fill(input_grad, input_grad + n_kernel * Nx * Ny, 0); // initialize input_grad
 
     for(int i = 0; i < n_kernel; i++){
-        padding(grad + i * Ox * Oy,Ox, P, dz_padded + i * Ndz * Ndz);
-        correlation(dz_padded + i * Ndz * Ndz, kernel[i], Ndz, kernel_size, 1, input_grad + i * Nx * Ny);
+        convolution::padding(grad + i * Ox * Oy,Ox, P, dz_padded + i * Ndz * Ndz);
+        convolution::correlation(dz_padded + i * Ndz * Ndz, kernel[i], Ndz, Ndz, kernel_size, 1, input_grad + i * Nx * Ny);
     }
 
     // add up
@@ -176,8 +131,8 @@ double *Conv::backward(double *grad) {
     return tmp;
 }
 
-void Conv::setKernel(int i, double *kernel) {
-    std::copy(kernel, kernel + kernel_size * kernel_size, this->kernel[i]);
+void Conv::setKernel(int i, double *myKernel) {
+    std::copy(myKernel, myKernel + kernel_size * kernel_size, this->kernel[i]);
 }
 
 void Conv::setBias(int i, double bias) {
@@ -204,8 +159,8 @@ void Conv::update(double lr, int batchSize) {
     std::fill(db, db + n_kernel, 0);
 }
 
-void Conv::setInput(double *input) {
-    this->input = input;
+void Conv::setInput(double *x) {
+    this->input = x;
 }
 
 

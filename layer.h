@@ -12,19 +12,19 @@ class Layer{
         switch (TYPE) {
             case Activation::ActivationFunctionType::RELU:
                 activation = Activation::relu;
-                activationDerivative = Activation::relu_derivative;
+                derivative = Activation::relu_derivative;
                 break;
             case Activation::ActivationFunctionType::SIGMOID:
                 activation = Activation::sigmoid;
-                activationDerivative = Activation::sigmoid_derivative;
+                derivative = Activation::sigmoid_derivative;
                 break;
             case Activation::ActivationFunctionType::TANH:
                 activation = Activation::tanh;
-                activationDerivative = Activation::tanh_derivative;
+                derivative = Activation::tanh_derivative;
                 break;
             case Activation::ActivationFunctionType::NONE:
                 activation = [] (double x) { return x; };
-                activationDerivative = [] (double x) { return 1.0; };
+                derivative = [] (double x) { return 1.0; };
                 break;
             default:
                 throw "Activation function not supported";
@@ -40,7 +40,7 @@ protected:
     int inputSize;
     int outputSize;
     std::function<double(double)> activation;
-    std::function<double(double)> activationDerivative;
+    std::function<double(double)> derivative;
 };
 
 #endif //NETWORK_LAYER_H
