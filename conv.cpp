@@ -1,7 +1,9 @@
 #include "conv.h"
 
-Conv::Conv(int inputSize, Activation::ActivationFunctionType type, int Nx, int Ny, int kernel_size,
-           int stride, int n_kernel, int padding) : Layer(inputSize, (inputSize + 2*padding - kernel_size) / stride + 1, type) {
+Conv::Conv(int Nx, int Ny, int kernel_size, int stride, int n_kernel, int padding, Activation::ActivationFunctionType type)
+           : Layer(Nx*Ny,
+                   n_kernel * ((Nx + 2*padding - kernel_size) / stride + 1) * ((Ny + 2*padding - kernel_size) / stride + 1),
+                   type) {
     this->n_kernel = n_kernel;
     this->input = nullptr;
     this->kernel_size = kernel_size;
@@ -20,10 +22,10 @@ Conv::Conv(int inputSize, Activation::ActivationFunctionType type, int Nx, int N
     }
 
     b = new double[n_kernel];
-    output = new double[Ox * Oy * n_kernel];
+    a = new double[Ox * Oy * n_kernel];
     dk = std::vector<double*>(n_kernel);
     db = new double[n_kernel];
-    dz = new double[Nx * Ny * n_kernel];
+    dz = new double[outputSize];
 
     // Initialize kernel
     std::random_device rd;
@@ -52,7 +54,7 @@ Conv::~Conv() {
         delete[] k;
     }
     delete[] b;
-    delete[] output;
+    delete[] a;
     for(auto fm : feature_map){
         delete[] fm;
     }
@@ -63,35 +65,34 @@ Conv::~Conv() {
     delete[] db;
 }
 
-double *Conv::forward(double *input) {
-    this->input = input;
+double *Conv::forward(const double *data) {
+    this->input = data;
     for(int i = 0; i < n_kernel; i++){
-        convolution::cross_correlation(input, kernel[i], Nx, Ny, kernel_size, stride, feature_map[i]);
+        convolution::cross_correlation(data, kernel[i], Nx, Ny, kernel_size, stride, feature_map[i]);
     }
-    // calculate output
+    // calculate a
     for(int i = 0; i < n_kernel; i++){
         for(int j = 0; j < Ox * Oy; j++){
-            output[i * Ox * Oy + j] = activation(feature_map[i][j] + b[i]);
+            a[i * Ox * Oy + j] = activation(feature_map[i][j] + b[i]);
         }
     }
-    return output;
+    return a;
 }
 
-double *Conv::backward(double *grad) {
-    double *tmp = new double [Nx * Ny];
-    // calculate gradient of kernel
-    // dz = grad * activationFunc.derivative(output)
+double *Conv::backward(const double *grad) {
     for(int i = 0; i < n_kernel; i++){
         for(int j = 0; j < Ox * Oy; j++) {
-            grad[i * Ox * Oy + j] *= derivative(output[i * Ox * Oy + j]);
+            dz[i * Ox * Oy + j] = grad[i * Ox * Oy + j] * derivative(a[i * Ox * Oy + j]);
         }
     }
+
+    auto *tmp = new double [Nx * Ny];
 
     // calculate gradient of kernel
     // DK = dz (*) input
     for(int i = 0; i < n_kernel; i++){
         auto* dki = new double[kernel_size * kernel_size];
-        convolution::cross_correlation(input, grad + i * Ox * Oy, Nx, Ny, Ox, stride, dki);
+        convolution::cross_correlation(input, dz + i * Ox * Oy, Nx, Ny, Ox, stride, dki);
         for(int j = 0; j < kernel_size*kernel_size; j++){
             dk[i][j] += dki[j];
         }
@@ -102,7 +103,7 @@ double *Conv::backward(double *grad) {
     // db = sum(dz)
     for(int i = 0; i < n_kernel; i++){
         for(int j = 0; j < Ox * Oy; j++){
-            db[i] += grad[i * Ox * Oy + j];
+            db[i] += dz[i * Ox * Oy + j];
         }
     }
 
@@ -115,7 +116,7 @@ double *Conv::backward(double *grad) {
     std::fill(input_grad, input_grad + n_kernel * Nx * Ny, 0); // initialize input_grad
 
     for(int i = 0; i < n_kernel; i++){
-        convolution::padding(grad + i * Ox * Oy,Ox, P, dz_padded + i * Ndz * Ndz);
+        convolution::padding(dz + i * Ox * Oy,Ox, P, dz_padded + i * Ndz * Ndz);
         convolution::correlation(dz_padded + i * Ndz * Ndz, kernel[i], Ndz, Ndz, kernel_size, 1, input_grad + i * Nx * Ny);
     }
 

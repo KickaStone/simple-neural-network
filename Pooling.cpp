@@ -8,7 +8,7 @@ Pooling::Pooling(int volumeSize, int Nx, int Ny, int Nk, int p,
                  int stride, PoolingType type1, Activation::ActivationFunctionType type2) :
         Layer(
                                  Nx*Ny*volumeSize,
-                                 ((Nx + 2*p - Nk) / stride + 1) * ((Ny + 2*p - Nk) / stride + 1),
+                                 ((Nx + 2*p - Nk) / stride + 1) * ((Ny + 2*p - Nk) / stride + 1) * volumeSize,
                                  type2
                          ), Nx(Nx), Ny(Ny), Nk(Nk), stride(stride) {
     this->padding = p;
@@ -33,7 +33,7 @@ Pooling::~Pooling() {
     delete[] input_grad;
 }
 
-double *Pooling::forward(double *x) {
+double *Pooling::forward(const double *x) {
     this->input = x;
     switch(this->poolingType){
         case PoolingType::AVG:
@@ -52,10 +52,14 @@ double *Pooling::forward(double *x) {
     return output;
 }
 
-double *Pooling::backward(double *grad) {
+double *Pooling::backward(const double *grad) {
+    double *output_grad;
+    output_grad = new double[Ox * Oy * volumeSize];
+    std::copy(grad, grad + Ox * Oy * volumeSize, output_grad);
+
     for(int i = 0; i < volumeSize; i++){
         for(int j = 0; j < Ox * Oy; j++){
-            grad[i * Ox * Oy + j] *= derivative(output[i * Ox * Oy + j]);
+            output_grad[i * Ox * Oy + j] *= derivative(output[i * Ox * Oy + j]);
         }
     }
 
@@ -74,7 +78,7 @@ double *Pooling::backward(double *grad) {
                         for(i = Oi * stride; i < Oi * stride + Nk; i++){
                             for(j = Oj * stride; j < Oj * stride + Nk; j++){
 //                                printf("\ti: %d, j: %d, index: %d\n", i, j, idx + i * Ny + j);
-                                input_grad[idx + i * Ny + j] += grad[Oidx + index] / (Nk * Nk);
+                                input_grad[idx + i * Ny + j] += output_grad[Oidx + index] / (Nk * Nk);
                             }
                         }
                     }
@@ -87,7 +91,7 @@ double *Pooling::backward(double *grad) {
                 for(int i = 0; i < Ox; i++){
                     for(int j = 0; j < Oy; j++){
                         int index = i * Oy + j;
-                        input_grad[v * Nx * Ny + record[index]] += grad[v * Ox * Oy + index];
+                        input_grad[v * Nx * Ny + record[index]] += output_grad[v * Ox * Oy + index];
                     }
                 }
             }

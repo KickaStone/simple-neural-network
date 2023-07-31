@@ -31,8 +31,8 @@ class Layer{
         }
     }
     virtual ~Layer()= default;
-    virtual double* forward(double *input) = 0; // pure virtual function
-    virtual double* backward(double *grad) = 0; // pure virtual function
+    virtual double* forward(const double *input) = 0; // pure virtual function
+    virtual double* backward(const double *grad) = 0; // pure virtual function
     virtual void update(double lr, int batchSize) = 0; // pure virtual function
     [[nodiscard]] int getOutputSize() const{ return outputSize; }
     [[nodiscard]] int getInputSize() const{ return inputSize; }

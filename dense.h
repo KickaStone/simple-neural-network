@@ -10,14 +10,14 @@ private:
         double *db;
         double *dz;
 
-        double *input;
+        const double *input;
     
     public:
         Dense(int input_size, int output_size, Activation::ActivationFunctionType TYPE);
 
         ~Dense() override;
-        double* forward(double *input_data) override;
-        double* backward(double *grad) override;
+        double* forward(const double *input_data) override;
+        double* backward(const double *grad) override;
         void update(double lr, int batchSize) override;
 
         [[nodiscard]] double* getW() const { return w; }

@@ -3,11 +3,9 @@ cmake_minimum_required(VERSION 3.26)
 set(this Test)
 
 set(Sources
-    # mlp_test.cpp
-#    conv_test.cpp
-#        pooling_test.cpp
+#        conv_test.cpp
+        pooling_test.cpp
         cnn_test.cpp
-        #    loader_test.cpp
 )
 
 set(Headers

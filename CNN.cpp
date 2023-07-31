@@ -28,19 +28,19 @@ double* CNN::forward(double *input_data) {
 
 double* CNN::backward(double *grad) {
     double *input = grad;
-    for(auto &layer : layers){
-        input = layer->backward(input);
+    for(int i = layers.size() - 1; i >= 0; i--){
+        input = layers[i]->backward(input);
     }
     return input;
 }
 
 void CNN::update(double lr, int batchSize) {
-    for(auto &layer : layers){
+    for(auto layer : layers){
         layer->update(lr, batchSize);
     }
 }
 
-void CNN::train(std::vector<double *> &input_data, std::vector<double *> &label, int epoch, double lr, int batchSize) {
+void CNN::train(std::vector<double *> &input_data, std::vector<double *> &label, std::vector<double*> &test_data, std::vector<int> &test_label, int epoch, double lr, int batchSize) {
     // SGD
     for(int e = 1; e <= epoch; e++){
         std::cout << "Epoch: " << e << std::endl;
@@ -53,23 +53,25 @@ void CNN::train(std::vector<double *> &input_data, std::vector<double *> &label,
             std::swap(label[i], label[j]);
         }
         double loss = 0;
-        std::cout << "Batch Size: " << batchSize << std::endl;
         // mini-batch
         for(int i = 0; i < input_data.size(); i += batchSize){
-            double *input = input_data[i];
-            double *label_data = label[i];
+//            std::cout << "batch: " << i / batchSize << std::endl;
             for(int j = 0; j < batchSize; j++){
-                input = forward(input_data[i + j]);
+                auto input = forward(input_data[i + j]);
+                auto *grad = new double[output_dim];
+                for(int k = 0; k < output_dim; k++){
+                    grad[k] = input[k] - label[i+j][k];
+                    loss += grad[k] * grad[k];
+                }
+//                std::cout << "loss: " << loss << std::endl;
+                backward(grad);
+                delete[] grad;
             }
-            auto *grad = new double[output_dim];
-            for(int j = 0; j < output_dim; j++){
-                grad[j] = input[j] - label_data[j];
-                loss += grad[j] * grad[j];
-            }
-            backward(grad);
             update(lr, batchSize);
         }
+        loss /= input_data.size();
         std::cout << "Epoch: " << e << " Loss: " << loss << std::endl;
+        predict(test_data, test_label);
     }
 }
 
@@ -89,5 +91,5 @@ void CNN::predict(std::vector<double *> &data, std::vector<int> &labels) {
             correct++;
         }
     }
-    std::cout << "Accuracy: " << correct / data.size() << std::endl;
+    std::cout << "Accuracy: " << (double)correct / (double)data.size() << std::endl;
 }

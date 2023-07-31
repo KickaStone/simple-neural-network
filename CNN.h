@@ -4,7 +4,7 @@
 
 #ifndef NETWORK_CNN_H
 #define NETWORK_CNN_H
-#include <iostream>
+
 #include "layer.h"
 #include "net.h"
 
@@ -21,9 +21,8 @@ public:
     double* backward(double *grad) override;
     void update(double lr, int batchSize) override;
 
-    void train(std::vector<double*> &input_data, std::vector<double*> &label, int epoch, double lr, int batchSize);
+    void train(std::vector<double*> &input_data, std::vector<double*> &label, std::vector<double*> &test_data, std::vector<int> &test_label, int epoch, double lr, int batchSize);
     void predict(std::vector<double*> &data, std::vector<int> &labels);
-
 };
 
 

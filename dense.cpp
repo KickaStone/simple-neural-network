@@ -33,7 +33,7 @@ Dense::~Dense() {
     delete[] this->dz;
 }
 
-double* Dense::forward(double *input_data) {
+double* Dense::forward(const double *input_data) {
     this->input = input_data;
     for(int i = 0; i < outputSize; i++) {
         a[i] = b[i];
@@ -45,8 +45,8 @@ double* Dense::forward(double *input_data) {
     return a;
 }
 
-double* Dense::backward(double *output_grad) {
-    // output layer's dC/dz
+double* Dense::backward(const double *output_grad) {
+    // a layer's dC/dz
     for(int i = 0; i < outputSize; i++){
         dz[i] = output_grad[i] * derivative(a[i]);
     }

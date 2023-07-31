@@ -11,8 +11,8 @@ class Conv : public Layer {
 private:
     std::vector<double*> kernel;
     double* b;
-    double* input;                    // TODO: volumes support
-    double* output;
+    const double* input;                    // TODO: volumes support
+    double* a;
     std::vector<double*> feature_map; // TODO: change to double*
     std::vector<double*> dk;          // TODO: change to double*
     double* db;
@@ -26,12 +26,12 @@ private:
     int Ox, Oy;
 
 public:
-    Conv(int inputSize,Activation::ActivationFunctionType type, int Nx, int Ny, int kernel_size,
-         int stride, int n_kernel, int padding);
+    Conv(int Nx, int Ny, int kernel_size,
+         int stride, int n_kernel, int padding, Activation::ActivationFunctionType type);
     ~Conv() override;
     
-    double* forward(double *input) override;
-    double* backward(double *grad) override;
+    double* forward(const double *data) override;
+    double* backward(const double *grad) override;
     void update(double lr, int batchSize) override;
 
     void setKernel(int i, double *myKernel);

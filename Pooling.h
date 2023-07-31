@@ -24,7 +24,7 @@ private:
     PoolingType poolingType;
 
     // input : Nx * Ny * volumeSize
-    double* input;
+    const double* input;
     double* output;
     double* input_grad;
     int* record; // record the index of max value
@@ -33,8 +33,8 @@ public:
     Pooling(int volumeSize, int Nx, int Ny, int Nk, int p, int stride, PoolingType type1, Activation::ActivationFunctionType type2);
     ~Pooling() override;
 
-    double* forward(double *x) override;
-    double* backward(double *grad) override;
+    double* forward(const double *x) override;
+    double* backward(const double *grad) override;
     void update(double lr, int batchSize) override;
 //    void setInput(double *input);
 //    double* getZ();

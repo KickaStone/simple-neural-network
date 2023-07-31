@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "../conv.h"
-
+#include "../activation.h"
 
 TEST(conv, cross_correlation){
     double img[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -87,16 +87,9 @@ TEST(conv, padding){
 }
 
 TEST(conv, conv_layer){
-    Conv conv(
-            9, // input size
-            Activation::ActivationFunctionType::RELU, // activation function
-            3, // Nx
-            3, // Ny
-            2, // kernel size
-            1, // stride
-            2, // n_kernel
-            0 // padding
-    );
+//    Conv(int Nx, int Ny, int kernel_size,
+//            int stride, int n_kernel, int padding, Activation::ActivationFunctionType type);
+    Conv conv(3, 3, 2, 1, 2, 0, Activation::ActivationFunctionType::RELU);
     double img[9] = {1, 2, 3, 4,  5, 6, 7, 8, 9};
     conv.setInput(img);
     double kernel[4] = {1, 2, 3, 4};
