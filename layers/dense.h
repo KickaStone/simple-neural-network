@@ -9,7 +9,9 @@ private:
         double *dw;
         double *db;
         double *dz;
+        double *input_grad;
         const double *input;
+
     
     public:
         Dense(int input_size, int output_size, Activation::ActivationFunctionType TYPE);

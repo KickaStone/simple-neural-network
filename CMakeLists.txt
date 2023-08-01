@@ -6,10 +6,11 @@ project(${this} C CXX)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(OpenCV REQUIRED)
+find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
 enable_testing()
 
@@ -46,5 +47,5 @@ add_subdirectory(test)
 
 target_link_libraries(
     ${this} PUBLIC
-    ${OpenCV_LIBS}
+Eigen3::Eigen
 )

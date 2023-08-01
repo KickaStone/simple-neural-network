@@ -8,7 +8,7 @@
 
 using namespace Activation;
 
-Dense dense(2, 3, ActivationFunctions(ActivationFunctionType::SIGMOID));
+Dense dense(2, 3, ActivationFunctionType::SIGMOID);
 TEST(DenseTest, Forward){
     double input[2] = {1, 2};
     double ww[] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6};

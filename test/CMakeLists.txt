@@ -3,9 +3,10 @@ cmake_minimum_required(VERSION 3.26)
 set(this Test)
 
 set(Sources
-#        conv_test.cpp
+        dense_test.cpp
         pooling_test.cpp
         cnn_test.cpp
+        eigen_test.cpp
 )
 
 set(Headers

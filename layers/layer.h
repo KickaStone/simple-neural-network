@@ -4,6 +4,8 @@
 #include <utility>
 #include <random>
 
+#include <Eigen/Dense>
+
 #include "../utils/activation.h"
 
 class Layer{

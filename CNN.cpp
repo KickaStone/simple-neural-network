@@ -61,7 +61,7 @@ void CNN::train(std::vector<double *> &input_data, std::vector<double *> &label,
                 auto *grad = new double[output_dim];
                 for(int k = 0; k < output_dim; k++){
                     grad[k] = input[k] - label[i+j][k];
-                    loss += grad[k] * grad[k];
+                    loss += 0.5 * grad[k] * grad[k];
                 }
 //                std::cout << "loss: " << loss << std::endl;
                 backward(grad);

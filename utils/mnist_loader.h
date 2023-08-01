@@ -8,7 +8,6 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <opencv2/opencv.hpp>
 
 int reverseInt(int i){
     unsigned char ch1, ch2, ch3, ch4;

@@ -7,6 +7,7 @@
 
 #include "layers/layer.h"
 #include "net.h"
+#include <Eigen/Dense>
 
 class CNN : public Net{
 private:

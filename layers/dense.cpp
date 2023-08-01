@@ -11,6 +11,7 @@ Dense::Dense(int input_size, int output_size, Activation::ActivationFunctionType
     this->dz = new double[output_size];
     this->dw = new double[input_size * output_size];
     this->db = new double[output_size];
+    this->input_grad = new double[input_size];
 
     // initialize w and b
     std::random_device rd;
@@ -31,6 +32,7 @@ Dense::~Dense() {
     delete[] this->db;
     delete[] this->dw;
     delete[] this->dz;
+    delete[] this->input_grad;
 }
 
 double* Dense::forward(const double *input_data) {
@@ -46,27 +48,27 @@ double* Dense::forward(const double *input_data) {
 }
 
 double* Dense::backward(const double *output_grad) {
-    // a layer's dC/dz
     for(int i = 0; i < outputSize; i++){
         dz[i] = output_grad[i] * derivative(a[i]);
     }
 
-    for(int i = 0; i < inputSize; i++){
-        for(int j = 0; j < outputSize; j++){
-            dw[j * inputSize + i] += dz[j] * input[i];
+    // dw
+    for(int i = 0; i < outputSize; i++){
+        for(int j = 0; j < inputSize; j++){
+            dw[i * inputSize + j] += dz[i] * input[j];
         }
     }
 
+    // db
     for (int i = 0; i < outputSize; ++i) {
         db[i] += dz[i];
     }
 
     // input layer's dC/da
-    auto *input_grad = new double[inputSize];
-    for(int i = 0; i < inputSize; i++) {
-        input_grad[i] = 0;
-        for (int j = 0; j < outputSize; j++) {
-            input_grad[i] += dz[j] * w[j * inputSize + i];
+    for(int j = 0; j < inputSize; j++){
+        input_grad[j] = 0;
+        for(int i = 0; i < outputSize; i++){
+            input_grad[j] += dz[i] * w[i * inputSize + j];
         }
     }
     return input_grad;
@@ -93,8 +95,8 @@ void Dense::save() {
     tm *ltm = localtime(&now);
     std::string time = std::to_string(1900 + ltm->tm_year) + std::to_string(1 + ltm->tm_mon) + std::to_string(ltm->tm_mday) + std::to_string(ltm->tm_hour) + std::to_string(ltm->tm_min) + std::to_string(ltm->tm_sec);
 
-    std::string w_file = "w_" + time + ".txt";
-    std::string b_file = "b_" + time + ".txt";
+    std::string w_file = "w_" + std::to_string(outputSize) + "_" + time + ".txt";
+    std::string b_file = "b_" + std::to_string(outputSize) + "_" + time + ".txt";
 
     FILE *fp_w = fopen(w_file.c_str(), "w");
     FILE *fp_b = fopen(b_file.c_str(), "w");
