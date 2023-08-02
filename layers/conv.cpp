@@ -27,14 +27,18 @@ Conv::Conv(int inputChannel, int inputHeight, int inputWidth, int outputChannel,
     K = std::vector<Mat3d>(_outputChannel);
     for(int i = 0; i < outputChannel; i++){
         K[i].resize(inputChannel, Eigen::MatrixXd::Zero(kernel_size, kernel_size));
-        for(auto k : K[i])
-            k = k.unaryExpr([&](double x){return dis(gen);});
+        for(int j = 0; j < inputChannel; j++){
+            K[i][j] = K[i][j].unaryExpr([&](double x){return dis(gen);});
+        }
     }
+    // std::cout << K[0][0] << std::endl;
     db = Vec::Zero(outputChannel);
     dK = std::vector<Mat3d>(_outputChannel, Mat3d(_inputChannel, Mat::Zero(kernel_size, kernel_size)));
+    // saveKernel("E:/Projects/Cuda/Network/");
 }
 
 Conv::~Conv() {
+    // saveKernel("E:/Projects/Cuda/Network/");
     delete[] _output;
     delete[] _grad;
 };
@@ -60,7 +64,7 @@ void cross_correlation(const Eigen::Ref<const Mat> &data, Mat &kernel, Mat &outp
         for(int j = 0; j < outputWidth; j++){
             if(i * stride + kernel.rows() > x.rows() || j * stride + kernel.cols() > x.cols())
                 throw "Convolution out of bound";
-            output(i, j) = (x.block(i * stride, j * stride, kernel.rows(), kernel.cols()).array() * kernel.array()).sum();
+            output(i, j) = (x.block(i * stride, j * stride, kernel.rows(), kernel.cols()).cwiseProduct(kernel)).sum();
         }
     }
     // std::cout << "output: " << std::endl << output << std::endl;
@@ -119,28 +123,20 @@ double *Conv::forward(const double *data) {
 }
 
 double *Conv::backward(const double *grad) {
-    // reshape grad
-    Mat3d dz;
-    for(int i = 0; i < _outputChannel; i++){
-        dz.emplace_back(Eigen::Map<Mat>(const_cast<double*>(grad + i * _outputHeight * _outputWidth), _outputHeight, _outputWidth));
-        dz.back().cwiseProduct(a[i].unaryExpr(std::ref(derivative)));
-    }
-    
-    // calculate db
-    for(int i = 0; i < _outputChannel; i++){
-        db(i) += dz[i].sum();
-    }
-
-    // add dilation 
     Mat3d dz_dilation(_outputChannel, Mat::Zero(_outputHeight * _stride - _stride + 1, _outputWidth * _stride - _stride + 1));
     for(int i = 0; i < _outputChannel; i++){
         for(int j = 0; j < _outputHeight; j++){
             for(int k = 0; k < _outputWidth; k++){
-                dz_dilation[i](j * _stride, k * _stride) = dz[i](j, k);
+                dz_dilation[i](j * _stride, k * _stride) = grad[i * _outputHeight * _outputWidth + k * _outputHeight + j] * derivative(a[i](j, k));
             }
         }
     }
-    
+
+    // calculate db
+    for(int i = 0; i < _outputChannel; i++){
+        db[i] += dz_dilation[i].sum();
+    }
+
     // calculate dK
     for(int i = 0; i < _outputChannel; i++){
         for(int j = 0; j < _inputChannel; j++){
@@ -159,8 +155,6 @@ double *Conv::backward(const double *grad) {
             dX[i].noalias() += dx_ij;
         }
     }
-
-    // std::cout << "dX: " << std::endl << dX[0] << std::endl;
 
     // remove padding and save to 
     for(int i = 0; i < _inputChannel; i++){
@@ -191,4 +185,20 @@ void Conv::update(double lr, int batchSize)
 void Conv::setKernel(int i, double *kernel)
 {
     K[i][0] = Eigen::Map<Mat>(kernel, _kernel_size, _kernel_size);
+}
+
+void Conv::saveKernel(std::string path){
+    std::string time = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    std::ofstream outfile(path + time + "kernel.txt");
+    if(!outfile.is_open()){
+        std::cout << "Cannot open file" << std::endl;
+        return;
+    }
+
+    for(int i = 0; i < _outputChannel; i++){
+        for(int j = 0; j < _inputChannel; j++){
+            outfile << K[i][j] << std::endl;
+        }
+    }
+    outfile.close();
 }

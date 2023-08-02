@@ -23,6 +23,8 @@ public:
 
     void train(std::vector<double*> &input_data, std::vector<double*> &label, std::vector<double*> &test_data, std::vector<int> &test_label, int epoch, double lr, int batchSize);
     void predict(std::vector<double*> &data, std::vector<int> &labels);
+
+    void setKernel(int layer, double* kernel);
 };
 
 

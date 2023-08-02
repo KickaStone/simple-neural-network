@@ -35,11 +35,11 @@ TEST(cnn_test, test1){
     ASSERT_EQ(test_data.size(), 10000);
     ASSERT_EQ(test_label.size(), 10000);
 
-    CNN cnn(3, 10);
-    cnn.addLayer(new Conv(1, 28, 28, 1, 5, 1, 0, ActivationFunctionType::SIGMOID));
+    CNN cnn(2, 10);
+    cnn.addLayer(new Conv(1, 28, 28, 2, 5, 1, 0, ActivationFunctionType::SIGMOID));
+
     // cnn.addLayer(new pooling(6, 24, 24, 2, 0, 2, PoolingType::MAX, Activation::ActivationFunctionType::NONE));
     cnn.addLayer(new Dense(24*24,  30, ActivationFunctionType::SIGMOID));
-    // cnn.addLayer(new Dense(28*28,  30, ActivationFunctionType::SIGMOID));
     cnn.addLayer(new Dense(30, 10, ActivationFunctionType::SIGMOID));
 
     cnn.train(train_data, y, test_data, test_label, 10, 3.0, 10);

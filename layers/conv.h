@@ -3,9 +3,12 @@
 
 #include <numeric>
 #include <utility>
+#include <fstream>
 
 #include "layer.h"
 #include "../utils/convolution.h"
+#include <chrono>
+
 
 using Mat3d = std::vector<Mat>;
 using MatMap = Eigen::Map<Mat>;
@@ -40,7 +43,6 @@ public:
     void update(double lr, int batchSize) override;
 
     void setKernel(int i, double* kernel);
-
-    std::vector<double*>& getDk();
+    void saveKernel(std::string path);
 };
 #endif // CONV_H

@@ -26,8 +26,8 @@ double* CNN::forward(double *input_data) {
     return input;
 }
 
-double* CNN::backward(double *output_grad) {
-    double *input = output_grad;
+double* CNN::backward(double *grad) {
+    double *input = grad;
     for(int i = (int)layers.size() - 1; i >= 0; i--){
         input = layers[i]->backward(input);
     }
