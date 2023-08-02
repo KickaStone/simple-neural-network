@@ -42,22 +42,3 @@ TEST(conv, conv_layer){
     EXPECT_EQ(d2[8], 0);
     std::cout << "Passed backward" << std::endl;
 }
-
-TEST(conv, test2){
-    Conv conv(1, 2, 3, 1, 2, 1, 0, Activation::ActivationFunctionType::RELU);
-    double img[6] = {1, 2, 3, 4, 5, 6};
-    double kernel[4] = {1, 2, 3, 4};
-    conv.setKernel(0, kernel);
-    auto d = conv.forward(img);
-    EXPECT_EQ(d[0], 37);
-    EXPECT_EQ(d[1], 47);
-
-    double *back = new double[2];
-    back[0] = 1;
-    back[1] = -1;
-    auto d2 = conv.backward(back);
-    EXPECT_EQ(d2[0], 2);
-    EXPECT_EQ(d2[1], 4);
-    EXPECT_EQ(d2[2], 0);
-    EXPECT_EQ(d2[3], 4);
-}

@@ -27,7 +27,7 @@ private:
     std::vector<Mat3d> K;   // kernels (h * w * inputchannel * outputchannel)
     Vec b; // bias
 
-    Mat3d _input;
+    std::vector<MatMap> _input;
     double* _output;
     double* _grad;
     Mat3d a;

@@ -18,6 +18,7 @@ Conv::Conv(int inputChannel, int inputHeight, int inputWidth, int outputChannel,
     std::mt19937 gen(rd());
     std::normal_distribution<> dis(0, 1);
 
+    _input = std::vector<MatMap>(_inputChannel, MatMap(nullptr, _inputHeight, _inputWidth));
     _output = new double[_outputHeight * _outputWidth * _outputChannel];
     _grad = new double[_inputHeight * _inputWidth * _inputChannel];
 
@@ -31,14 +32,13 @@ Conv::Conv(int inputChannel, int inputHeight, int inputWidth, int outputChannel,
             K[i][j] = K[i][j].unaryExpr([&](double x){return dis(gen);});
         }
     }
-    // std::cout << K[0][0] << std::endl;
+
     db = Vec::Zero(outputChannel);
     dK = std::vector<Mat3d>(_outputChannel, Mat3d(_inputChannel, Mat::Zero(kernel_size, kernel_size)));
-    // saveKernel("E:/Projects/Cuda/Network/");
 }
 
 Conv::~Conv() {
-    // saveKernel("E:/Projects/Cuda/Network/");
+
     delete[] _output;
     delete[] _grad;
 };
@@ -99,8 +99,9 @@ void correlation(const Eigen::Ref<const Mat> &data, const Eigen::Ref<const Mat> 
 
 double *Conv::forward(const double *data) {
     // reshape input data;
+
     for(int i = 0; i < _inputChannel; i++){
-        _input.emplace_back(Eigen::Map<Mat>(const_cast<double*>(data + i * _inputHeight * _inputWidth), _inputHeight, _inputWidth));
+        new (&_input[i]) MatMap(const_cast<double*>(data + i * _inputHeight * _inputWidth), _inputHeight, _inputWidth);
     }
 
     // for each kernel

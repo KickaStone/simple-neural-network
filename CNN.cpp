@@ -40,18 +40,22 @@ void CNN::update(double lr, int batchSize) {
     }
 }
 
+void shuffle(std::vector<double *> &input_data, std::vector<double *> &label) {
+    std::random_device rd;
+    std::mt19937 g(rd());
+    for(int i = 0; i < (int)input_data.size(); i++){
+        int j = std::uniform_int_distribution<int>(i, input_data.size() - 1)(g);
+        std::swap(input_data[i], input_data[j]);
+        std::swap(label[i], label[j]);
+    }
+}
+
 void CNN::train(std::vector<double *> &input_data, std::vector<double *> &label, std::vector<double*> &test_data, std::vector<int> &test_label, int epoch, double lr, int batchSize) {
     // SGD
     for(int e = 1; e <= epoch; e++){
         std::cout << "Epoch: " << e << std::endl;
         // shuffle data
-        std::random_device rd;
-        std::mt19937 g(rd());
-        for(int i = 0; i < (int)input_data.size(); i++){
-            int j = std::uniform_int_distribution<int>(i, input_data.size() - 1)(g);
-            std::swap(input_data[i], input_data[j]);
-            std::swap(label[i], label[j]);
-        }
+        shuffle(input_data, label);
         double loss = 0;
         // mini-batch
         for(int i = 0; i < (int)input_data.size(); i += batchSize){
