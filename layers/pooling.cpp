@@ -4,122 +4,121 @@
 
 #include "pooling.h"
 
-pooling::pooling(int volumeSize, int Nx, int Ny, int Nk, int p,
-                 int stride, PoolingType type1, Activation::ActivationFunctionType type2) : Layer(Nx * Ny * volumeSize,
-                ((Nx + 2 * p - Nk) / stride + 1) * ((Ny + 2 * p - Nk) / stride + 1) * volumeSize,
-                type2)
+pooling::pooling(int inputChannel, int inputHeight, int inputWidth, int kenrelSize, int stride, int padding, PoolingType type)
+    : Layer(inputChannel * inputHeight * inputWidth,
+            inputChannel * ((inputHeight + 2 * padding - kenrelSize) / stride + 1) * ((inputWidth + 2 * padding - kenrelSize) / stride + 1),
+            Activation::ActivationFunctionType::NONE),
+      _inputChannel(inputChannel),
+      _inputHeight(inputHeight),
+      _inputWidth(inputWidth),
+      _kenrelSize(kenrelSize),
+      _stride(stride),
+      _padding(padding),
+      _outputHeight((inputHeight + 2 * padding - kenrelSize) / stride + 1),
+      _outputWidth((inputWidth + 2 * padding - kenrelSize) / stride + 1),
+      poolingType(type)
 {
-    this->Nk = Nk;
-    this->stride = stride;
-    this->Nx = Nx;
-    this->Ny = Ny;
-    this->Ox = (Nx + 2 * p - Nk) / stride + 1;
-    this->Oy = (Ny + 2 * p - Nk) / stride + 1;
-    this->channels = volumeSize;
-    this->padding = p;
-    this->poolingType = type1;
-
-    this->output = new double[Ox * Oy * volumeSize];
-    this->record = new int[Ox * Oy * volumeSize];
-
-    for (int i = 0; i < Ox * Oy * volumeSize; ++i)
-    {
-        output[i] = 0;
-        record[i] = 0;
+    _output_v = new double[_outputHeight * _outputWidth * _inputChannel];
+    _output_m = std::vector<Mat>(_inputChannel, Mat::Zero(_outputHeight, _outputWidth));
+    if(PoolingType::MAX_POOL_2D == poolingType){
+        _record = std::vector<Mat>(_inputChannel, Mat::Zero(_outputHeight, _outputWidth));
     }
-    input_grad = new double[Nx * Ny * volumeSize];
 }
 
 pooling::~pooling()
 {
-    delete[] output;
-    delete[] record;
-    delete[] input_grad;
+    delete[] _output_v;
 }
 
-double *pooling::forward(const double *x)
+
+void max_pooling(const Mat &input, Mat &output, Mat &record, int kernelSize, int stride, int padding)
 {
-    this->input = x;
-    switch (this->poolingType)
+    int inputHeight = input.rows();
+    int inputWidth = input.cols();
+    int outputHeight = (inputHeight + 2 * padding - kernelSize) / stride + 1;
+    int outputWidth = (inputWidth + 2 * padding - kernelSize) / stride + 1;
+
+    for (int i = 0; i < outputHeight; i++)
     {
-    case PoolingType::AVG:
-        for (int i = 0; i < channels; i++)
+        for (int j = 0; j < outputWidth; j++)
         {
-            convolution::avg_pooling(input + i * Nx * Ny, Nx, Ny, Nk, stride, output + i * Ox * Oy);
+            int startRow = std::max(i * stride - padding, 0);
+            int startCol = std::max(j * stride - padding, 0);
+            int endRow = std::min(startRow + kernelSize, inputHeight);
+            int endCol = std::min(startCol + kernelSize, inputWidth);
+
+            double maxVal = -std::numeric_limits<double>::infinity();
+            if(startRow >= endRow || startCol >= endCol){
+                output(i, j) = 0;
+                continue;
+            }else{
+                int max_i = 0, max_j = 0;
+                output(i, j) = input.block(startRow, startCol, endRow - startRow, endCol - startCol).maxCoeff(&max_i, &max_j);
+                record(i, j) = max_i * (endCol - startCol) + max_j;
+            }
         }
-        break;
-    case PoolingType::MAX:
-        for (int i = 0; i < channels; i++)
-        {
-            convolution::max_pooling(input + i * Nx * Ny, Nx, Ny, Nk, stride, output + i * Ox * Oy, record + i * Ox * Oy);
-        }
-        break;
-    default:
-        throw "pooling type not supported!";
     }
-    return output;
+}
+
+void avg_pooling(const Mat &input, Mat &output, int kernelSize, int stride, int padding)
+{
+    int inputHeight = input.rows();
+    int inputWidth = input.cols();
+    int outputHeight = (inputHeight + 2 * padding - kernelSize) / stride + 1;
+    int outputWidth = (inputWidth + 2 * padding - kernelSize) / stride + 1;
+
+    for (int i = 0; i < outputHeight; i++)
+    {
+        for (int j = 0; j < outputWidth; j++)
+        {
+            int startRow = std::max(i * stride - padding, 0);
+            int startCol = std::max(j * stride - padding, 0);
+            int endRow = std::min(startRow + kernelSize, inputHeight);
+            int endCol = std::min(startCol + kernelSize, inputWidth);
+
+            if(startRow >= endRow || startCol >= endCol){
+                output(i, j) = 0;
+                continue;
+            }else{
+                output(i, j) = input.block(startRow, startCol, endRow - startRow, endCol - startCol).sum() / (kernelSize * kernelSize);
+            }
+        }
+    }
+}
+
+double *pooling::forward(const double *input){
+    for(int i = 0; i < _inputChannel; i++){
+        reshape_matrix(input + i * _inputHeight * _inputWidth, _input_m[i], _inputHeight, _inputWidth);
+    }
+
+    switch (poolingType)
+    {
+        case PoolingType::MAX_POOL_2D:
+            for(int i = 0; i < _inputChannel; i++){
+                max_pooling(_input_m[i], _output_m[i], _record[i], _kenrelSize, _stride, _padding);
+            }
+            break;
+        case PoolingType::AVG_POOL_2D:
+            for(int i = 0; i < _inputChannel; i++){
+                avg_pooling(_input_m[i], _output_m[i], _kenrelSize, _stride, _padding);
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    for(int i = 0; i < _inputChannel; i++){
+        std::copy(_output_m[i].data(), _output_m[i].data() + _outputHeight * _outputWidth, _output_v + i * _outputHeight * _outputWidth);
+    }
+    return _output_v;
 }
 
 double *pooling::backward(const double *grad)
 {
-    double *output_grad;
-    output_grad = new double[Ox * Oy * channels];
-    std::copy(grad, grad + Ox * Oy * channels, output_grad);
-
-    for (int i = 0; i < channels; i++)
-    {
-        for (int j = 0; j < Ox * Oy; j++)
-        {
-            output_grad[i * Ox * Oy + j] *= derivative(output[i * Ox * Oy + j]);
-        }
-    }
-
-    std::fill(input_grad, input_grad + Nx * Ny * channels, 0);
-    switch (poolingType)
-    {
-    case PoolingType::AVG:
-        for (int v = 0; v < channels; v++)
-        {
-            int idx = v * Nx * Ny;
-            int Oidx = v * Ox * Oy;
-            int i = 0, j = 0;
-            int Oi = 0, Oj = 0;
-            for (Oi = 0; Oi < Ox; Oi++)
-            {
-                for (Oj = 0; Oj < Oy; Oj++)
-                {
-                    //                        printf("Oi: %d, Oj: %d\n", Oi, Oj);
-                    int index = Oi * Oy + Oj;
-                    for (i = Oi * stride; i < Oi * stride + Nk; i++)
-                    {
-                        for (j = Oj * stride; j < Oj * stride + Nk; j++)
-                        {
-                            //                                printf("\ti: %d, j: %d, index: %d\n", i, j, idx + i * Ny + j);
-                            input_grad[idx + i * Ny + j] += output_grad[Oidx + index] / (Nk * Nk);
-                        }
-                    }
-                }
-            }
-        }
-        break;
-    case PoolingType::MAX:
-        // based on the index of max value, set the gradient
-        for (int v = 0; v < channels; v++)
-        {
-            for (int i = 0; i < Ox; i++)
-            {
-                for (int j = 0; j < Oy; j++)
-                {
-                    int index = i * Oy + j;
-                    input_grad[v * Nx * Ny + record[index]] += output_grad[v * Ox * Oy + index];
-                }
-            }
-        }
-        break;
-    default:
-        break;
-    }
-    return input_grad;
+    
+    // TODO: implement backward
+    return nullptr;
 }
 
 void pooling::update(double lr, int batchSize)

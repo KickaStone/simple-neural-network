@@ -8,12 +8,8 @@
 #include <algorithm>
 #include <limits>
 
-#include <Eigen/Dense>
-
 #include "../utils/activation.h"
-
-using Mat = Eigen::MatrixXd;
-using Vec = Eigen::VectorXd;
+#include "../utils/eigen_helper.h"
 
 class Layer{
     public:

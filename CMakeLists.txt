@@ -28,14 +28,15 @@ add_subdirectory(googletest)
 set(HEADER_SET
         layers/layer.h
         layers/dense.h
-        utils/activation.h
-        MLP.h
-        utils/mnist_loader.h
-        layers/conv.h
         layers/pooling.h
+        layers/conv.h
+        layers/layer_type.h
+        utils/eigen_helper.h
+        utils/activation.h
+        utils/mnist_loader.h
         utils/convolution.h
         CNN.h
-        layers/layer_type.h
+        MLP.h
 )
 
 set(SOURCE_SET
