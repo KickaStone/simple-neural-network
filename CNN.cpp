@@ -47,14 +47,14 @@ void CNN::train(std::vector<double *> &input_data, std::vector<double *> &label,
         // shuffle data
         std::random_device rd;
         std::mt19937 g(rd());
-        for(int i = 0; i < input_data.size(); i++){
+        for(int i = 0; i < (int)input_data.size(); i++){
             int j = std::uniform_int_distribution<int>(i, input_data.size() - 1)(g);
             std::swap(input_data[i], input_data[j]);
             std::swap(label[i], label[j]);
         }
         double loss = 0;
         // mini-batch
-        for(int i = 0; i < input_data.size(); i += batchSize){
+        for(int i = 0; i < (int)input_data.size(); i += batchSize){
 //            std::cout << "batch: " << i / batchSize << std::endl;
             for(int j = 0; j < batchSize; j++){
                 auto input = forward(input_data[i + j]);
@@ -69,7 +69,7 @@ void CNN::train(std::vector<double *> &input_data, std::vector<double *> &label,
             }
             update(lr, batchSize);
         }
-        loss /= input_data.size();
+        loss /= (double)input_data.size();
         std::cout << "Epoch: " << e << " Loss: " << loss << std::endl;
         predict(test_data, test_label);
     }
@@ -78,7 +78,7 @@ void CNN::train(std::vector<double *> &input_data, std::vector<double *> &label,
 void CNN::predict(std::vector<double *> &data, std::vector<int> &labels) {
     int correct = 0;
     int max_idx = 0;
-    for(int i = 0; i < data.size(); i++){
+    for(int i = 0; i < (int)data.size(); i++){
         double *input = forward(data[i]);
         double max = input[0];
         for(int j = 1; j < output_dim; j++){

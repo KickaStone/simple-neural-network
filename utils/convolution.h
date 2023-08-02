@@ -5,7 +5,8 @@
 #ifndef NETWORK_CONVOLUTION_H
 #define NETWORK_CONVOLUTION_H
 
-#include <numeric>
+#include <algorithm>
+#include <limits>
 
 namespace convolution{
     void padding(const double *input, int Nx, int p, double *output);

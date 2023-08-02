@@ -8,12 +8,20 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
 enable_testing()
 
+add_compile_options(
+       -Wall -Werror -Wno-error=maybe-uninitialized
+       $<$<CONFIG:RELEASE>:-Ofast>
+       $<$<CONFIG:DEBUG>:-O0>
+       $<$<CONFIG:DEBUG>:-ggdb3>
+)
+add_compile_definitions(
+        $<$<CONFIG:RELEASE>:NDEBUG>
+        $<$<CONFIG:RELEASE>:BOOST_DISABLE_ASSERTS>
+)
 add_subdirectory(googletest)
 
 set(HEADER_SET

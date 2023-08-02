@@ -67,7 +67,7 @@ void convolution::avg_pooling(const double *input, int Nx, int Ny, int Nk, int s
 void convolution::max_pooling(const double *input, int Nx, int Ny, int Nk, int stride, double *output, int *record) {
     int Ox = (Nx - Nk) / stride + 1;
     int Oy = (Ny - Nk) / stride + 1;
-    int ii, jj, max_idx;
+    int ii, jj, max_idx = 0;
     for(int i = 0; i < Ox; i++){
         for(int j = 0; j < Oy; j++){
             if(i + Nk > Nx || j + Nk > Ny) continue; // out of bound

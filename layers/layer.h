@@ -1,12 +1,19 @@
 #ifndef NETWORK_LAYER_H
 #define NETWORK_LAYER_H
 
+#include <iostream>
 #include <utility>
 #include <random>
+#include <numeric>
+#include <algorithm>
+#include <limits>
 
 #include <Eigen/Dense>
 
 #include "../utils/activation.h"
+
+using Mat = Eigen::MatrixXd;
+using Vec = Eigen::VectorXd;
 
 class Layer{
     public:

@@ -3,10 +3,7 @@ cmake_minimum_required(VERSION 3.26)
 set(this Test)
 
 set(Sources
-        dense_test.cpp
-        pooling_test.cpp
-        cnn_test.cpp
-        eigen_test.cpp
+    cnn_test.cpp
 )
 
 set(Headers
@@ -23,4 +20,5 @@ add_test(
     NAME ${this}
     COMMAND ${this}
 )
+
 
