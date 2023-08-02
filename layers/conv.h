@@ -7,36 +7,39 @@
 #include "layer.h"
 #include "../utils/convolution.h"
 
+using Mat3d = std::vector<Mat>;
+using MatMap = Eigen::Map<Mat>;
 class Conv : public Layer {
 private:
-    std::vector<double*> kernel;
-    double* b;
-    const double* input;                    // TODO: volumes support
-    double* a;
-    std::vector<double*> feature_map; // TODO: change to double*
-    std::vector<double*> dk;          // TODO: change to double*
-    double* db;
-    double* dz;
+    int _inputChannel; 
+    int _inputHeight;
+    int _inputWidth;
+    int _outputChannel;
+    int _kernel_size;
+    int _stride;
+    int _padding;
+    int _outputHeight;
+    int _outputWidth;
 
-    int n_kernel;
-    int kernel_size;
-    int stride;
-    int p; // padding
-    int Nx, Ny;
-    int Ox, Oy;
+    std::vector<Mat3d> K;   // kernels (h * w * inputchannel * outputchannel)
+    Vec b; // bias
+
+    Mat3d _input;
+    double* _output;
+    double* _grad;
+    Mat3d a;
+    std::vector<Mat3d> dK;
+    Vec db;
 
 public:
-    Conv(int Nx, int Ny, int kernel_size,
-         int stride, int n_kernel, int padding, Activation::ActivationFunctionType type);
+    Conv(int inputChannel, int inputHeight, int inputWidth, int outputChannel, int kernel_size, int stride, int padding, Activation::ActivationFunctionType type);
     ~Conv() override;
     
     double* forward(const double *data) override;
     double* backward(const double *grad) override;
     void update(double lr, int batchSize) override;
 
-    void setKernel(int i, double *myKernel);
-    void setBias(int i, double bias);
-    void setInput(double *x);
+    void setKernel(int i, double* kernel);
 
     std::vector<double*>& getDk();
 };

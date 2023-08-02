@@ -26,8 +26,8 @@ TEST(MLP, train){
     ASSERT_EQ(test_data.size(), 10000);
     ASSERT_EQ(test_label.size(), 10000);
 
-    int num_layers = 3;
-    std::vector<int> layers = {784, 30, 10};
+    int num_layers = 4;
+    std::vector<int> layers = {784, 50, 16, 10};
     MLP mlp(num_layers, layers);
 
     mlp.set_dataset(train_data, train_label, test_data, test_label);

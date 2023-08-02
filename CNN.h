@@ -13,7 +13,6 @@ class CNN : public Net{
 private:
     std::vector<Layer*> layers;
 public:
-    CNN() = default;
     ~CNN();
     CNN(int num_layers, int output_dim);
     void addLayer(Layer* layer);

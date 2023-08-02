@@ -6,6 +6,8 @@
 #include "../layers/layer_type.h"
 #include "../utils/mnist_loader.h"
 
+using namespace Activation;
+
 TEST(cnn_test, test1){
     const char* train_image_file = "E:/Projects/Cuda/Network/data/train-images.idx3-ubyte";
     const char* train_label_file = "E:/Projects/Cuda/Network/data/train-labels.idx1-ubyte";
@@ -34,13 +36,11 @@ TEST(cnn_test, test1){
     ASSERT_EQ(test_label.size(), 10000);
 
     CNN cnn(3, 10);
-    cnn.addLayer(new Conv(28, 28, 5, 1, 6, 0, Activation::ActivationFunctionType::SIGMOID));
-    cnn.addLayer(new pooling(6, 24, 24, 2, 0, 2, PoolingType::MAX, Activation::ActivationFunctionType::NONE));
-
-//    cnn.addLayer(new Dense(24*24*1,  30, Activation::ActivationFunctionType::SIGMOID));
-
-    cnn.addLayer(new Dense(12*12*6,  30, Activation::ActivationFunctionType::SIGMOID));
-    cnn.addLayer(new Dense(30, 10, Activation::ActivationFunctionType::SIGMOID));
+    cnn.addLayer(new Conv(1, 28, 28, 1, 5, 1, 0, ActivationFunctionType::SIGMOID));
+    // cnn.addLayer(new pooling(6, 24, 24, 2, 0, 2, PoolingType::MAX, Activation::ActivationFunctionType::NONE));
+    cnn.addLayer(new Dense(24*24,  30, ActivationFunctionType::SIGMOID));
+    // cnn.addLayer(new Dense(28*28,  30, ActivationFunctionType::SIGMOID));
+    cnn.addLayer(new Dense(30, 10, ActivationFunctionType::SIGMOID));
 
     cnn.train(train_data, y, test_data, test_label, 10, 3.0, 10);
 //    cnn.predict(test_data, test_label);

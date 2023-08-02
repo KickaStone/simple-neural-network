@@ -9,7 +9,7 @@ CNN::CNN(int num_layers, int output_dim) {
 }
 
 CNN::~CNN() {
-    for(auto &layer : layers){
+    for(auto layer : layers){
         delete layer;
     }
 }
@@ -26,9 +26,9 @@ double* CNN::forward(double *input_data) {
     return input;
 }
 
-double* CNN::backward(double *grad) {
-    double *input = grad;
-    for(int i = layers.size() - 1; i >= 0; i--){
+double* CNN::backward(double *output_grad) {
+    double *input = output_grad;
+    for(int i = (int)layers.size() - 1; i >= 0; i--){
         input = layers[i]->backward(input);
     }
     return input;
@@ -80,8 +80,9 @@ void CNN::predict(std::vector<double *> &data, std::vector<int> &labels) {
     int max_idx = 0;
     for(int i = 0; i < (int)data.size(); i++){
         double *input = forward(data[i]);
+        max_idx = 0;
         double max = input[0];
-        for(int j = 1; j < output_dim; j++){
+        for(int j = 0; j < output_dim; j++){
             if(input[j] > max){
                 max = input[j];
                 max_idx = j;

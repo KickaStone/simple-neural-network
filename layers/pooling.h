@@ -19,7 +19,7 @@ private:
     int stride;
     int Nx, Ny;
     int Ox, Oy;
-    int volumeSize;
+    int channels;
     int padding;
     PoolingType poolingType;
 

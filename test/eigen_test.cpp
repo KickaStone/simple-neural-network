@@ -166,3 +166,48 @@ TEST(eigen, partialReduction){
     cout << "a.colwise().sum().maxCoeff() = " << endl << a.colwise().sum().maxCoeff() << endl << endl;
 }
 
+
+TEST(eigen, blockOperation){
+    MatrixXd a = MatrixXd::Constant(6, 6, 1);
+    cout << "a = " << endl << a << endl << endl;
+    a(Eigen::seqN(0, 2), Eigen::seqN(0, 2)).array() += 1;
+    cout << "a = " << endl << a << endl << endl;
+}
+
+using Mat = Eigen::MatrixXd;
+
+void cross_correlation(const Eigen::Ref<const Mat> &data, Mat &kernel, Mat &output, int stride, int padding){
+    int inputHeight = data.rows();
+    int inputWidth = data.cols();
+    int outputHeight = (inputHeight + 2 * padding - kernel.rows()) / stride + 1;
+    int outputWidth = (inputWidth + 2 * padding - kernel.cols()) / stride + 1;
+    Mat x = data;
+
+    if(padding > 0){
+        x = Mat::Zero(inputHeight + 2 * padding, outputHeight + 2 * padding);
+        x.block(padding, padding, inputHeight, inputWidth) = data;
+    }
+
+    for(int i = 0; i < outputHeight; i++){
+        for(int j = 0; j < outputWidth; j++){
+            if(i * stride + kernel.rows() > x.rows() || j * stride + kernel.cols() > x.cols())
+                throw "Convolution out of bound";
+            output(i, j) = (x.block(i * stride, j * stride, kernel.rows(), kernel.cols()).array() * kernel.array()).sum();
+        }
+    }
+
+
+}
+
+TEST(eigen, conv){
+    Eigen::MatrixXd img(4,4);
+    img << 1, 2, 3, 4,
+           5, 6, 7, 8,
+           9,10,11,12,
+           13,14,15,16;
+    Eigen::MatrixXd kernel(2,2);
+    kernel << 1, 0, 0, 1;
+    Mat output(2,2);
+    cross_correlation(img, kernel, output, 2, 0);
+    cout << output << endl;
+}

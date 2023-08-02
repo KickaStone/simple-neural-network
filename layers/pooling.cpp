@@ -15,7 +15,7 @@ pooling::pooling(int volumeSize, int Nx, int Ny, int Nk, int p,
     this->Ny = Ny;
     this->Ox = (Nx + 2 * p - Nk) / stride + 1;
     this->Oy = (Ny + 2 * p - Nk) / stride + 1;
-    this->volumeSize = volumeSize;
+    this->channels = volumeSize;
     this->padding = p;
     this->poolingType = type1;
 
@@ -43,13 +43,13 @@ double *pooling::forward(const double *x)
     switch (this->poolingType)
     {
     case PoolingType::AVG:
-        for (int i = 0; i < volumeSize; i++)
+        for (int i = 0; i < channels; i++)
         {
             convolution::avg_pooling(input + i * Nx * Ny, Nx, Ny, Nk, stride, output + i * Ox * Oy);
         }
         break;
     case PoolingType::MAX:
-        for (int i = 0; i < volumeSize; i++)
+        for (int i = 0; i < channels; i++)
         {
             convolution::max_pooling(input + i * Nx * Ny, Nx, Ny, Nk, stride, output + i * Ox * Oy, record + i * Ox * Oy);
         }
@@ -63,10 +63,10 @@ double *pooling::forward(const double *x)
 double *pooling::backward(const double *grad)
 {
     double *output_grad;
-    output_grad = new double[Ox * Oy * volumeSize];
-    std::copy(grad, grad + Ox * Oy * volumeSize, output_grad);
+    output_grad = new double[Ox * Oy * channels];
+    std::copy(grad, grad + Ox * Oy * channels, output_grad);
 
-    for (int i = 0; i < volumeSize; i++)
+    for (int i = 0; i < channels; i++)
     {
         for (int j = 0; j < Ox * Oy; j++)
         {
@@ -74,11 +74,11 @@ double *pooling::backward(const double *grad)
         }
     }
 
-    std::fill(input_grad, input_grad + Nx * Ny * volumeSize, 0);
+    std::fill(input_grad, input_grad + Nx * Ny * channels, 0);
     switch (poolingType)
     {
     case PoolingType::AVG:
-        for (int v = 0; v < volumeSize; v++)
+        for (int v = 0; v < channels; v++)
         {
             int idx = v * Nx * Ny;
             int Oidx = v * Ox * Oy;
@@ -104,7 +104,7 @@ double *pooling::backward(const double *grad)
         break;
     case PoolingType::MAX:
         // based on the index of max value, set the gradient
-        for (int v = 0; v < volumeSize; v++)
+        for (int v = 0; v < channels; v++)
         {
             for (int i = 0; i < Ox; i++)
             {

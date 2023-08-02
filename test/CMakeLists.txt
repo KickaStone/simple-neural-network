@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.26)
 set(this Test)
 
 set(Sources
+    # eigen_test.cpp
+    conv_test.cpp
+    # mlp_test.cpp
     cnn_test.cpp
 )
 
