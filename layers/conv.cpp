@@ -38,15 +38,19 @@ Conv::Conv(int inputChannel, int inputHeight, int inputWidth, int outputChannel,
 }
 
 Conv::~Conv() {
-
     delete[] _output;
     delete[] _grad;
 };
 
-void cross_correlation(const Eigen::Ref<const Mat> &data, Mat &kernel, Mat &output, int stride, int padding){
+void cross_correlation(MatMap &data, Mat &kernel, Mat &output, int stride, int padding){
     // std::cout << "--------------------------------" << std::endl;
     // std::cout << "data: " << std::endl << data << std::endl;
     // std::cout << "kernel: " << std::endl << kernel << std::endl;
+
+    // std::fstream("log.txt", std::ios::out | std::ios::app) << "--------------------------------" << std::endl;
+    // std::fstream("log.txt", std::ios::out | std::ios::app) << "data: " << std::endl << data << std::endl;
+    // std::fstream("log.txt", std::ios::out | std::ios::app) << "kernel: " << std::endl << kernel << std::endl;
+
     int inputHeight = data.rows();
     int inputWidth = data.cols();
     int outputHeight = (inputHeight + 2 * padding - kernel.rows()) / stride + 1;
@@ -55,7 +59,13 @@ void cross_correlation(const Eigen::Ref<const Mat> &data, Mat &kernel, Mat &outp
 
     if(padding > 0){
         x = Mat::Zero(inputHeight + 2 * padding, outputHeight + 2 * padding);
-        x.block(padding, padding, inputHeight, inputWidth) = data;
+        // x.block(padding, padding, inputHeight, inputWidth) = data;
+        for(int i = 0; i < inputHeight; i++){
+            for(int j = 0; j < inputWidth; j++){
+                x(i + padding, j + padding) = data(i, j);
+                // TODO fix bug when padding > 1, backpropagation
+            }
+        }
     }else{
         x = data;
     }
@@ -63,14 +73,15 @@ void cross_correlation(const Eigen::Ref<const Mat> &data, Mat &kernel, Mat &outp
     for(int i = 0; i < outputHeight; i++){
         for(int j = 0; j < outputWidth; j++){
             if(i * stride + kernel.rows() > x.rows() || j * stride + kernel.cols() > x.cols())
-                throw "Convolution out of bound";
+                throw std::runtime_error("Convolution out of bound" + std::to_string(i) + " " + std::to_string(j) + " " + std::to_string(x.rows()) + " " + std::to_string(x.cols()) + " " + std::to_string(kernel.rows()) + " " + std::to_string(kernel.cols())) ;
             output(i, j) = (x.block(i * stride, j * stride, kernel.rows(), kernel.cols()).cwiseProduct(kernel)).sum();
         }
     }
     // std::cout << "output: " << std::endl << output << std::endl;
+    // std::fstream("log.txt", std::ios::out | std::ios::app) << "output: " << std::endl << output << std::endl;
 }
 
-void correlation(const Eigen::Ref<const Mat> &data, const Eigen::Ref<const Mat> &kernel, Mat &output, int stride, int padding){
+void correlation(Mat &data, const Eigen::Ref<const Mat> &kernel, Mat &output, int stride, int padding){
     // std::cout << "--------------------------------" << std::endl;
     // std::cout << "data: " << std::endl << data << std::endl;
     // std::cout << "kernel: " << std::endl << kernel << std::endl;
@@ -101,7 +112,7 @@ double *Conv::forward(const double *data) {
     // reshape input data;
 
     for(int i = 0; i < _inputChannel; i++){
-        new (&_input[i]) MatMap(const_cast<double*>(data + i * _inputHeight * _inputWidth), _inputHeight, _inputWidth);
+        new (&_input[i]) MatMap(data + i * _inputHeight * _inputWidth, _inputHeight, _inputWidth);
     }
 
     // for each kernel
@@ -139,9 +150,9 @@ double *Conv::backward(const double *grad) {
     }
 
     // calculate dK
+    Mat dk_ij = Mat::Zero(_kernel_size, _kernel_size);
     for(int i = 0; i < _outputChannel; i++){
         for(int j = 0; j < _inputChannel; j++){
-            Mat dk_ij = Mat::Zero(_kernel_size, _kernel_size);
             cross_correlation(_input[j], dz_dilation[i], dk_ij, 1, _padding);
             dK[i][j].noalias() += dk_ij;
         }

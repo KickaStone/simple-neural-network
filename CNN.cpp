@@ -49,15 +49,23 @@ void CNN::update(double lr, int batchSize) {
     }
 }
 
-bool CNN::checkVaildity()
+bool CNN::isValid()
 {
-    if(_layers.empty()){
+    if(_layers.empty() || num_layers != (int)_layers.size()){
+        std::cout << "Invalid network" << std::endl;
         return false;
     }
-    for(int i = 0; i < (int)_layers.size() - 1; i++){
-        std::cout << _layers[i]->getOutputSize() << " " << _layers[i+1]->getInputSize() << std::endl;
-        if(_layers[i]->getOutputSize() != _layers[i+1]->getInputSize()){
-            return false;
+    for(int i = 0; i < (int)_layers.size(); i++){
+        std::cout << "layer " << i + 1 << ": "  << _layers[i]->getInputSize() << " -> " << _layers[i]->getOutputSize() << std::endl;
+        if(i == (int)_layers.size() - 1){
+            if(_layers[i]->getOutputSize() != output_dim){
+                return false;
+            }
+            break;
+        }else{
+            if(_layers[i]->getOutputSize() != _layers[i+1]->getInputSize()){
+                return false;
+            }
         }
     }
     return true;
@@ -74,12 +82,21 @@ void shuffle(std::vector<double *> &input_data, std::vector<int> &label) {
 }
 
 void CNN::train(int epoch, double lr, int batchSize) {
-    if(!checkVaildity()){
+    if(!isValid()){
         throw std::runtime_error("Invalid network");
     }
+    auto time = std::chrono::system_clock::now();
+    std::string data = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()).count());
+    std::fstream train_out("train_" + data + ".csv", std::ios::out);
+    // add tag: epoch lr loss accuracy test_loss
+    train_out << "epoch, lr, loss, accuracy" << std::endl;
+
+    // double decay = 0.0001;
+    double acc = 0;
     // SGD
     for(int e = 1; e <= epoch; e++){
-        std::cout << "Epoch: " << e << std::endl;
+        // lr *= (1.0 / (1.0 + decay * epoch * batchSize));
+        std::cout << "Epoch: " << e  << " / " << epoch;
         // shuffle data
         shuffle(_train_data, _train_label);
         double loss = 0;
@@ -99,14 +116,17 @@ void CNN::train(int epoch, double lr, int batchSize) {
             update(lr, batchSize);
         }
         loss /= (double)_train_data.size();
-        std::cout << "Epoch: " << e << " Loss: " << loss << std::endl;
-        predict();
+        std::cout << " Loss: " << loss;
+        acc = predict();
+        train_out << e << ", " << lr << ", " << loss << ", " << acc << "%" << std::endl;
     }
+    train_out.close();
 }
 
-void CNN::predict() {
-    if(_test_data.empty() || _test_label.empty()){
-        return;
+double CNN::predict() {
+    if(_test_data.empty() || _test_label.empty() || _test_data.size() != _test_label.size()){
+        std::cout << " No test data" << std::endl;
+        return 0.0;
     }
     int correct = 0;
     int max_idx = 0;
@@ -130,5 +150,6 @@ void CNN::predict() {
             correct++;
         }
     }
-    std::cout << "Accuracy: " << (double)correct * 100 / (double)_test_data.size() << "%, test_loss: " << test_loss << std::endl;
+    std::cout << " Accuracy: " << (double)correct * 100 / (double)_test_data.size() << "%, test_loss: " << test_loss << std::endl;
+    return (double)correct * 100 / (double)_test_data.size();
 }

@@ -27,9 +27,9 @@ public:
     double* forward(double *input_data) override;
     double* backward(double *grad) override;
     void update(double lr, int batchSize) override;
-    bool checkVaildity();
+    bool isValid();
     void train(int epoch, double lr, int batchSize);
-    void predict();
+    double predict();
 };
 
 
