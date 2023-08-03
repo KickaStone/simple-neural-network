@@ -1,17 +1,8 @@
 #ifndef CONV_H
 #define CONV_H
 
-#include <numeric>
-#include <utility>
-#include <fstream>
-
 #include "layer.h"
-#include "../utils/convolution.h"
-#include <chrono>
 
-
-using Mat3d = std::vector<Mat>;
-using MatMap = Eigen::Map<Mat>;
 class Conv : public Layer {
 private:
     int _inputChannel; 
@@ -24,14 +15,14 @@ private:
     int _outputHeight;
     int _outputWidth;
 
-    std::vector<Mat3d> K;   // kernels (h * w * inputchannel * outputchannel)
+    std::vector<std::vector<Mat>> K;   // kernels (h * w * inputchannel * outputchannel)
     Vec b; // bias
 
     std::vector<MatMap> _input;
     double* _output;
     double* _grad;
-    Mat3d a;
-    std::vector<Mat3d> dK;
+    std::vector<Mat> a;
+    std::vector<std::vector<Mat>> dK;
     Vec db;
 
 public:

@@ -23,9 +23,9 @@ Conv::Conv(int inputChannel, int inputHeight, int inputWidth, int outputChannel,
     _grad = new double[_inputHeight * _inputWidth * _inputChannel];
 
     // initialize kernel
-    a = Mat3d(_outputChannel, Mat::Zero(_outputHeight, _outputWidth));
+    a = std::vector<Mat>(_outputChannel, Mat::Zero(_outputHeight, _outputWidth));
     b = Vec::Zero(outputChannel);
-    K = std::vector<Mat3d>(_outputChannel);
+    K = std::vector<std::vector<Mat>>(_outputChannel);
     for(int i = 0; i < outputChannel; i++){
         K[i].resize(inputChannel, Eigen::MatrixXd::Zero(kernel_size, kernel_size));
         for(int j = 0; j < inputChannel; j++){
@@ -34,7 +34,7 @@ Conv::Conv(int inputChannel, int inputHeight, int inputWidth, int outputChannel,
     }
 
     db = Vec::Zero(outputChannel);
-    dK = std::vector<Mat3d>(_outputChannel, Mat3d(_inputChannel, Mat::Zero(kernel_size, kernel_size)));
+    dK = std::vector<std::vector<Mat>>(_outputChannel, std::vector<Mat>(_inputChannel, Mat::Zero(kernel_size, kernel_size)));
 }
 
 Conv::~Conv() {
@@ -124,7 +124,7 @@ double *Conv::forward(const double *data) {
 }
 
 double *Conv::backward(const double *grad) {
-    Mat3d dz_dilation(_outputChannel, Mat::Zero(_outputHeight * _stride - _stride + 1, _outputWidth * _stride - _stride + 1));
+    std::vector<Mat> dz_dilation(_outputChannel, Mat::Zero(_outputHeight * _stride - _stride + 1, _outputWidth * _stride - _stride + 1));
     for(int i = 0; i < _outputChannel; i++){
         for(int j = 0; j < _outputHeight; j++){
             for(int k = 0; k < _outputWidth; k++){
@@ -148,7 +148,7 @@ double *Conv::backward(const double *grad) {
     }
 
     // calculate dX
-    Mat3d dX(_inputChannel, Mat::Zero(_inputHeight + 2 * _padding, _inputWidth + 2 * _padding));
+    std::vector<Mat> dX(_inputChannel, Mat::Zero(_inputHeight + 2 * _padding, _inputWidth + 2 * _padding));
     for(int i = 0; i < _inputChannel; i++){
         Mat dx_ij = Mat::Zero(_inputHeight + 2 * _padding, _inputWidth + 2 * _padding);
         for(int j = 0; j < _outputChannel; j++){

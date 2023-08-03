@@ -9,11 +9,11 @@
 #include "../utils/convolution.h"
 
 enum class PoolingType{
-    MAX_POOL_2D,
-    AVG_POOL_2D,
+    MAX,
+    AVG,
 };
 
-class pooling : public Layer{
+class Pooling : public Layer{
 private:
     int _inputChannel;
     int _inputHeight;
@@ -25,21 +25,20 @@ private:
     int _outputHeight;
     int _outputWidth;
 
-    double *_input_v;
     double *_output_v;
 
-    std::vector<Mat> _input_m;
+    std::vector<MatMap> _input_m;
     std::vector<Mat> _output_m;
     std::vector<Mat> _record;
 
     PoolingType poolingType;
 
-    double *_grad_v;
-    std::vector<Mat> _grad_m;
+    double *_input_grad_v;
+    std::vector<Mat> _input_grad_m;
 
 public:
-    pooling(int inputChannel, int inputHeight, int inputWidth, int kenrelSize, int stride, int padding, PoolingType type);
-    ~pooling() override;
+    Pooling(int inputChannel, int inputHeight, int inputWidth, int kenrelSize, int stride, int padding, PoolingType type);
+    ~Pooling() override;
 
     double* forward(const double *x) override;
     double* backward(const double *grad) override;

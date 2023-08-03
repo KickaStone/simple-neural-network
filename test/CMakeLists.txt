@@ -7,6 +7,7 @@ set(Sources
     conv_test.cpp
     # mlp_test.cpp
     cnn_test.cpp
+    # pooling_test.cpp
 )
 
 set(Headers

@@ -47,6 +47,7 @@ set(SOURCE_SET
         layers/conv.h
         layers/pooling.cpp
         utils/convolution.cpp
+        utils/eigen_helper.cpp
         CNN.cpp
         CNN.h
 )

@@ -3,24 +3,33 @@
 //
 #include "CNN.h"
 
-CNN::CNN(int num_layers, int output_dim) {
+CNN::CNN(int num_layers, int output_dim){
     this->num_layers = num_layers;
     this->output_dim = output_dim;
 }
 
 CNN::~CNN() {
-    for(auto layer : layers){
+    for(auto layer : _layers){
         delete layer;
     }
 }
 
 void CNN::addLayer(Layer *layer) {
-    layers.push_back(layer);
+    _layers.push_back(layer);
 }
 
-double* CNN::forward(double *input_data) {
+void CNN::setDataset(std::vector<double *> &train_data, std::vector<int> &train_label, std::vector<double *> &test_data, std::vector<int> &test_label)
+{
+    _train_data = train_data;
+    _train_label = train_label;
+    _test_data = test_data;
+    _test_label = test_label;
+}
+
+double *CNN::forward(double *input_data)
+{
     double *input = input_data;
-    for(auto &layer : layers){
+    for(auto &layer : _layers){
         input = layer->forward(input);
     }
     return input;
@@ -28,19 +37,33 @@ double* CNN::forward(double *input_data) {
 
 double* CNN::backward(double *grad) {
     double *input = grad;
-    for(int i = (int)layers.size() - 1; i >= 0; i--){
-        input = layers[i]->backward(input);
+    for(int i = (int)_layers.size() - 1; i >= 0; i--){
+        input = _layers[i]->backward(input);
     }
     return input;
 }
 
 void CNN::update(double lr, int batchSize) {
-    for(auto layer : layers){
+    for(auto layer : _layers){
         layer->update(lr, batchSize);
     }
 }
 
-void shuffle(std::vector<double *> &input_data, std::vector<double *> &label) {
+bool CNN::checkVaildity()
+{
+    if(_layers.empty()){
+        return false;
+    }
+    for(int i = 0; i < (int)_layers.size() - 1; i++){
+        std::cout << _layers[i]->getOutputSize() << " " << _layers[i+1]->getInputSize() << std::endl;
+        if(_layers[i]->getOutputSize() != _layers[i+1]->getInputSize()){
+            return false;
+        }
+    }
+    return true;
+}
+
+void shuffle(std::vector<double *> &input_data, std::vector<int> &label) {
     std::random_device rd;
     std::mt19937 g(rd());
     for(int i = 0; i < (int)input_data.size(); i++){
@@ -50,40 +73,46 @@ void shuffle(std::vector<double *> &input_data, std::vector<double *> &label) {
     }
 }
 
-void CNN::train(std::vector<double *> &input_data, std::vector<double *> &label, std::vector<double*> &test_data, std::vector<int> &test_label, int epoch, double lr, int batchSize) {
+void CNN::train(int epoch, double lr, int batchSize) {
+    if(!checkVaildity()){
+        throw std::runtime_error("Invalid network");
+    }
     // SGD
     for(int e = 1; e <= epoch; e++){
         std::cout << "Epoch: " << e << std::endl;
         // shuffle data
-        shuffle(input_data, label);
+        shuffle(_train_data, _train_label);
         double loss = 0;
-        // mini-batch
-        for(int i = 0; i < (int)input_data.size(); i += batchSize){
-//            std::cout << "batch: " << i / batchSize << std::endl;
+        // mini-batch SGD
+        for(int i = 0; i < (int)_train_data.size(); i += batchSize){
             for(int j = 0; j < batchSize; j++){
-                auto input = forward(input_data[i + j]);
+                auto input = forward(_train_data[i + j]);
                 auto *grad = new double[output_dim];
                 for(int k = 0; k < output_dim; k++){
-                    grad[k] = input[k] - label[i+j][k];
+                    double y = _train_label[i+j] == k ? 1.0 : 0.0;
+                    grad[k] = input[k] - y;
                     loss += 0.5 * grad[k] * grad[k];
                 }
-//                std::cout << "loss: " << loss << std::endl;
                 backward(grad);
                 delete[] grad;
             }
             update(lr, batchSize);
         }
-        loss /= (double)input_data.size();
+        loss /= (double)_train_data.size();
         std::cout << "Epoch: " << e << " Loss: " << loss << std::endl;
-        predict(test_data, test_label);
+        predict();
     }
 }
 
-void CNN::predict(std::vector<double *> &data, std::vector<int> &labels) {
+void CNN::predict() {
+    if(_test_data.empty() || _test_label.empty()){
+        return;
+    }
     int correct = 0;
     int max_idx = 0;
-    for(int i = 0; i < (int)data.size(); i++){
-        double *input = forward(data[i]);
+    double test_loss = 0.0;
+    for(int i = 0; i < (int)_test_data.size(); i++){
+        double *input = forward(_test_data[i]);
         max_idx = 0;
         double max = input[0];
         for(int j = 0; j < output_dim; j++){
@@ -91,10 +120,15 @@ void CNN::predict(std::vector<double *> &data, std::vector<int> &labels) {
                 max = input[j];
                 max_idx = j;
             }
+            if(j == _test_label[i]){
+                test_loss += 0.5 * (input[j] - 1.0) * (input[j] - 1.0);
+            }else{
+                test_loss += 0.5 * input[j] * input[j];
+            }
         }
-        if(max_idx == labels[i]){
+        if(max_idx == _test_label[i]){
             correct++;
         }
     }
-    std::cout << "Accuracy: " << (double)correct / (double)data.size() << std::endl;
+    std::cout << "Accuracy: " << (double)correct * 100 / (double)_test_data.size() << "%, test_loss: " << test_loss << std::endl;
 }

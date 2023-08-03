@@ -17,8 +17,6 @@ protected:
     int output_dim{};
     std::vector<Layer*> layers;
 public:
-    Net() = default;
-    ~Net() = default;
     virtual double* forward(double *input_data) = 0;
     virtual double* backward(double *grad) = 0;
     virtual void update(double lr, int batchSize) = 0;

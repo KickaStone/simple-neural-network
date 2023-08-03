@@ -7,6 +7,9 @@
 #include <numeric>
 #include <algorithm>
 #include <limits>
+#include <numeric>
+#include <fstream>
+#include <chrono>
 
 #include "../utils/activation.h"
 #include "../utils/eigen_helper.h"
@@ -41,6 +44,10 @@ class Layer{
     virtual void update(double lr, int batchSize) = 0; // pure virtual function
     [[nodiscard]] int getOutputSize() const{ return outputSize; }
     [[nodiscard]] int getInputSize() const{ return inputSize; }
+    [[nodiscard]] int getInSize() const{ return inputSize; }
+    [[nodiscard]] int getOutSize() const{ return outputSize; }
+    [[nodiscard]] std::function<double(double)> getActivation() const{ return activation; }
+    [[nodiscard]] std::function<double(double)> getDerivative() const{ return derivative; }
 protected:
     int inputSize;
     int outputSize;
