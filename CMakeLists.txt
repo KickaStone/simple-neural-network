@@ -34,7 +34,6 @@ set(HEADER_SET
         utils/eigen_helper.h
         utils/activation.h
         utils/mnist_loader.h
-        utils/convolution.h
         CNN.h
         MLP.h
 )
@@ -46,7 +45,6 @@ set(SOURCE_SET
         layers/conv.cpp
         layers/conv.h
         layers/pooling.cpp
-        utils/convolution.cpp
         utils/eigen_helper.cpp
         CNN.cpp
         CNN.h
